@@ -23,8 +23,9 @@
 #define PIR_PIN       14  // HC-SR501 Data OUT
 
 // ─── NETWORK CONFIG ─────────────
-#define WIFI_SSID     "Tarun"
-#define WIFI_PASSWORD "TARUN2007"
+// ⚠️ Fill in your own WiFi credentials before flashing!
+#define WIFI_SSID     "YOUR_WIFI_NAME"      // <--- CHANGE THIS
+#define WIFI_PASSWORD "YOUR_WIFI_PASSWORD"  // <--- CHANGE THIS
 
 // ⚠️  UPDATE THIS to your PC's local IP where backend.py is running!
 // Run `ipconfig` in cmd to find it (e.g. 192.168.1.5)

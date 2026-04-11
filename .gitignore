@@ -1,0 +1,14 @@
+# ─── SECRETS (NEVER commit these) ───
+.env
+
+# ─── Python cache ───
+__pycache__/
+*.pyc
+*.pyo
+
+# ─── Face images (private student data) ───
+faces/
+
+# ─── OS files ───
+.DS_Store
+Thumbs.db

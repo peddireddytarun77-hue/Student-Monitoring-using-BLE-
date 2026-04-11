@@ -23,6 +23,8 @@ Quantum Security Layer (CRYSTALS-Kyber-1024 + Dilithium):
 """
 
 import cv2, json, time, threading, asyncio, os
+from dotenv import load_dotenv
+load_dotenv()  # Load secrets from .env file
 import numpy as np
 import mediapipe as mp
 from collections import defaultdict
@@ -49,8 +51,8 @@ os.makedirs(FACES_DIR, exist_ok=True)
 # ─────────────────────────────────────────────
 #  CONFIG  (edit if needed)
 # ─────────────────────────────────────────────
-SUPABASE_URL       = "https://giuwlorzwpbfrfablcva.supabase.co"
-SUPABASE_KEY       = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdpdXdsb3J6d3BiZnJmYWJsY3ZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgxMjc2MTEsImV4cCI6MjA4MzcwMzYxMX0.PnNwRmpeSmUhO0gfcPYYh6oMje2h9uCa3k8lpGLfV00"
+SUPABASE_URL       = os.getenv("SUPABASE_URL")
+SUPABASE_KEY       = os.getenv("SUPABASE_KEY")
 CAMERA_INDEX       = 0        # 0 = built-in webcam
 FACE_THRESHOLD     = 0.50     # Strictness: lower = stricter match
 BLE_SCAN_TIMEOUT   = 5.0      # seconds per BLE scan cycle
