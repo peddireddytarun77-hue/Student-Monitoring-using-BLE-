@@ -1,0 +1,2142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="description" content="Smart Attendance System using Face Recognition and BLE device verification." />
+  <title>NEXUS — Smart Attendance System</title>
+  <style>
+/* ============================================
+   SMART ATTENDANCE SYSTEM - STYLESHEET
+   Clean, Modern, No-Collision Design
+   ============================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+/* ===== ROOT VARIABLES ===== */
+:root {
+  --bg-primary:    #0a0f1e;
+  --bg-secondary:  #111827;
+  --bg-card:       #1a2235;
+  --bg-card-hover: #1e293b;
+  --border:        #2a3a5c;
+  --accent-blue:   #3b82f6;
+  --accent-green:  #10b981;
+  --accent-red:    #ef4444;
+  --accent-yellow: #f59e0b;
+  --accent-purple: #8b5cf6;
+  --text-primary:  #f1f5f9;
+  --text-secondary:#94a3b8;
+  --text-muted:    #475569;
+  --radius:        12px;
+  --shadow:        0 4px 24px rgba(0,0,0,0.4);
+  --transition:    0.25s ease;
+}
+
+/* ===== RESET & BASE ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+code {
+  background: #1e293b;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  color: var(--accent-blue);
+}
+
+/* ===== HEADER ===== */
+.header {
+  background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 28px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 20px rgba(0,0,0,0.5);
+}
+.header-left { display: flex; align-items: center; gap: 14px; }
+.logo {
+  width: 48px; height: 48px;
+  background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.6rem;
+}
+.header-text h1 { font-size: 1.2rem; font-weight: 700; }
+.header-text p  { font-size: 0.75rem; color: var(--text-secondary); }
+.header-right {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 0.85rem; color: var(--text-secondary);
+}
+.clock { font-size: 1rem; font-weight: 600; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.status-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--accent-red);
+  animation: pulse 2s infinite;
+}
+.status-dot.online { background: var(--accent-green); }
+@keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
+
+/* ===== NAVBAR ===== */
+.nav-bar {
+  display: flex;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  padding: 0 16px;
+}
+.nav-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  padding: 14px 20px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 500;
+  border-bottom: 3px solid transparent;
+  transition: var(--transition);
+  white-space: nowrap;
+}
+.nav-btn:hover { color: var(--text-primary); background: rgba(255,255,255,0.03); }
+.nav-btn.active {
+  color: var(--accent-blue);
+  border-bottom-color: var(--accent-blue);
+}
+
+/* ===== MAIN CONTENT ===== */
+.main-content { flex: 1; padding: 24px; max-width: 1400px; margin: 0 auto; width: 100%; }
+
+/* ===== TAB SECTIONS ===== */
+.tab-section { display: none; }
+.tab-section.active { display: block; animation: fadeIn 0.3s ease; }
+@keyframes fadeIn { from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);} }
+
+/* ===== SECTION HEADER ===== */
+.section-header { margin-bottom: 24px; }
+.section-header h2 { font-size: 1.4rem; font-weight: 700; }
+.section-header p  { color: var(--text-secondary); font-size: 0.85rem; margin-top: 4px; }
+
+/* ===== CARD ===== */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  box-shadow: var(--shadow);
+}
+.card h3 { font-size: 1rem; font-weight: 600; margin-bottom: 16px; }
+
+/* ===== BUTTONS ===== */
+.btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: var(--transition);
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-primary  { background: var(--accent-blue);   color: #fff; }
+.btn-primary:hover:not(:disabled)  { background: #2563eb; transform: translateY(-1px); }
+.btn-danger   { background: var(--accent-red);    color: #fff; }
+.btn-danger:hover:not(:disabled)   { background: #dc2626; transform: translateY(-1px); }
+.btn-secondary{ background: var(--bg-card-hover); color: var(--text-primary); border: 1px solid var(--border); }
+.btn-secondary:hover:not(:disabled){ background: #273548; }
+.btn-power-on { background: var(--accent-green); color: #fff; }
+.btn-power-on:hover { background: #059669; }
+.btn-power-off { background: var(--accent-red); color: #fff; }
+.btn-power-off:hover { background: #dc2626; }
+
+
+/* ===== MARK ATTENDANCE LAYOUT ===== */
+.attendance-grid {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 20px;
+}
+@media(max-width: 900px) { .attendance-grid { grid-template-columns: 1fr; } }
+
+/* ===== CAMERA ===== */
+.camera-card { display: flex; flex-direction: column; gap: 16px; }
+.camera-box {
+  background: #000;
+  border-radius: 10px;
+  overflow: hidden;
+  aspect-ratio: 4/3;
+  display: flex; align-items: center; justify-content: center;
+  position: relative;
+  border: 2px solid var(--border);
+}
+.camera-box img { width: 100%; height: 100%; object-fit: cover; }
+.camera-placeholder {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 20px;
+}
+.camera-placeholder .camera-icon { font-size: 3rem; margin-bottom: 10px; }
+.camera-controls { display: flex; gap: 10px; flex-wrap: wrap; }
+
+/* ===== STATUS PANEL ===== */
+.status-panel { display: flex; flex-direction: column; gap: 14px; }
+.step-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  transition: var(--transition);
+}
+.step-card.success { border-color: var(--accent-green); background: rgba(16,185,129,0.08); }
+.step-card.error   { border-color: var(--accent-red);   background: rgba(239,68,68,0.08); }
+.step-card.active  { border-color: var(--accent-blue);  background: rgba(59,130,246,0.08); }
+
+.step-number {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: var(--bg-card-hover);
+  border: 2px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 0.9rem;
+  flex-shrink: 0;
+}
+.step-info h4  { font-size: 0.9rem; font-weight: 600; }
+.step-info p   { font-size: 0.8rem; color: var(--text-secondary); margin-top: 2px; }
+.step-result   { font-size: 0.8rem; font-weight: 600; color: var(--accent-green); margin-top: 4px; }
+.step-icon     { font-size: 1.5rem; margin-left: auto; }
+
+/* ===== RESULT CARD ===== */
+.result-card {
+  background: var(--bg-card);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  text-align: center;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: var(--transition);
+}
+.result-card #final-result-icon { font-size: 2.5rem; margin-bottom: 8px; }
+.result-card.success { border-color: var(--accent-green); background: rgba(16,185,129,0.1); }
+.result-card.error   { border-color: var(--accent-red);   background: rgba(239,68,68,0.1); }
+
+/* ===== STUDENT DETECTED CARD ===== */
+.student-detected-card {
+  background: var(--bg-card);
+  border: 1px solid var(--accent-green);
+  border-radius: var(--radius);
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  animation: slideIn 0.4s ease;
+}
+@keyframes slideIn { from{transform:translateX(20px);opacity:0;} to{transform:translateX(0);opacity:1;} }
+.student-avatar { font-size: 2.5rem; }
+.student-detected-info h4 { font-size: 1rem; font-weight: 700; color: var(--accent-green); }
+.student-detected-info p  { font-size: 0.8rem; color: var(--text-secondary); margin-top: 2px; }
+
+/* ===== ENROLL SECTION ===== */
+.enroll-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+@media(max-width: 800px) { .enroll-grid { grid-template-columns: 1fr; } }
+
+/* ===== FORM STYLES ===== */
+.form-group { margin-bottom: 14px; }
+.form-group label { display: block; font-size: 0.82rem; font-weight: 500; color: var(--text-secondary); margin-bottom: 5px; }
+.form-group input,
+.form-group select {
+  width: 100%;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 9px 12px;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.875rem;
+  transition: var(--transition);
+}
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
+}
+.form-group small { font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; display: block; }
+
+/* ===== ENROLL STEPS ===== */
+.enroll-steps { display: flex; gap: 8px; margin: 16px 0; flex-wrap: wrap; }
+.enroll-step {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  font-size: 0.8rem; color: var(--text-secondary);
+}
+.estep-num {
+  width: 20px; height: 20px;
+  background: var(--border);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.7rem; font-weight: 700;
+}
+.estep-check { color: var(--accent-green); font-weight: 700; }
+
+.face-preview {
+  background: var(--bg-secondary);
+  border: 2px dashed var(--accent-green);
+  border-radius: 10px;
+  padding: 12px;
+  text-align: center;
+  margin: 12px 0;
+  font-size: 0.85rem; color: var(--accent-green);
+}
+
+.tips-box {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px;
+  margin-top: 14px;
+}
+.tips-box h4 { font-size: 0.85rem; margin-bottom: 8px; }
+.tips-box ul { padding-left: 16px; }
+.tips-box li { font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 4px; }
+
+/* ===== MESSAGE BOX ===== */
+.message-box {
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-top: 12px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+.message-box.success { background: rgba(16,185,129,0.1); border: 1px solid var(--accent-green); color: var(--accent-green); }
+.message-box.error   { background: rgba(239,68,68,0.1);  border: 1px solid var(--accent-red);   color: var(--accent-red);   }
+
+/* ===== RECORDS SECTION ===== */
+.records-controls { margin-bottom: 16px; }
+.filter-row { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+.filter-row .form-group { margin-bottom: 0; }
+
+.table-summary {
+  display: flex; gap: 20px;
+  padding: 10px 0 14px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 14px;
+}
+.table-summary strong { font-weight: 700; font-size: 1rem; }
+.text-green { color: var(--accent-green) !important; }
+.text-red   { color: var(--accent-red)   !important; }
+
+.table-wrapper { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+thead tr { background: var(--bg-secondary); }
+th { padding: 10px 12px; text-align: left; color: var(--text-secondary); font-weight: 600; border-bottom: 1px solid var(--border); }
+td { padding: 10px 12px; border-bottom: 1px solid rgba(42,58,92,0.5); }
+tr:hover td { background: rgba(255,255,255,0.02); }
+.no-data { text-align: center; color: var(--text-muted); padding: 30px; }
+
+.badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: capitalize;
+}
+.badge-present    { background: rgba(16,185,129,0.15); color: var(--accent-green); }
+.badge-absent     { background: rgba(239,68,68,0.15);  color: var(--accent-red); }
+.badge-suspicious { background: rgba(245,158,11,0.15); color: var(--accent-yellow); }
+.badge-ok   { color: var(--accent-green); }
+.badge-fail { color: var(--accent-red); }
+
+/* ===== BLE MONITOR ===== */
+.ble-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+@media(max-width: 800px) { .ble-grid { grid-template-columns: 1fr; } }
+
+.ble-controls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+.ble-status-text { font-size: 0.85rem; color: var(--text-secondary); }
+
+.ble-devices-list { display: flex; flex-direction: column; gap: 10px; min-height: 200px; }
+.no-devices { text-align: center; color: var(--text-muted); padding: 40px 20px; }
+
+.ble-device-item {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  transition: var(--transition);
+  animation: fadeIn 0.3s ease;
+}
+.ble-device-item.registered { border-color: var(--accent-green); }
+.ble-device-item.unknown    { border-color: var(--accent-yellow); }
+
+.ble-signal-bar {
+  width: 48px;
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 24px;
+}
+.bar { background: var(--border); border-radius: 2px; width: 8px; }
+.bar.lit { background: var(--accent-green); }
+.bar:nth-child(1) { height: 6px;  }
+.bar:nth-child(2) { height: 12px; }
+.bar:nth-child(3) { height: 18px; }
+.bar:nth-child(4) { height: 24px; }
+
+.ble-device-info { flex: 1; }
+.ble-device-info .dev-name { font-weight: 600; font-size: 0.9rem; }
+.ble-device-info .dev-mac  { font-size: 0.75rem; color: var(--text-muted); }
+.ble-rssi { font-weight: 700; font-size: 0.9rem; }
+.ble-rssi.strong { color: var(--accent-green); }
+.ble-rssi.medium { color: var(--accent-yellow); }
+.ble-rssi.weak   { color: var(--accent-red); }
+
+/* ===== RADAR CANVAS ===== */
+.radar-container {
+  display: flex; justify-content: center; align-items: center;
+  background: #050d1a;
+  border-radius: 10px;
+  padding: 16px;
+  border: 1px solid var(--border);
+}
+#radar-canvas { display: block; }
+.radar-legend { display: flex; gap: 14px; margin-top: 12px; font-size: 0.78rem; color: var(--text-secondary); flex-wrap: wrap; }
+.legend-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 4px; }
+.legend-dot.green  { background: var(--accent-green); }
+.legend-dot.yellow { background: var(--accent-yellow); }
+.legend-dot.red    { background: var(--accent-red); }
+
+/* ===== STUDENTS GRID ===== */
+.students-controls { margin-bottom: 16px; }
+.students-controls input {
+  width: 100%; max-width: 400px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 9px 12px;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.875rem;
+}
+
+.students-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+}
+.student-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+  text-align: center;
+  transition: var(--transition);
+  cursor: default;
+}
+.student-card:hover { border-color: var(--accent-blue); transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
+.student-card .s-avatar { font-size: 2.5rem; margin-bottom: 10px; }
+.student-card .s-name  { font-weight: 700; font-size: 0.95rem; }
+.student-card .s-roll  { font-size: 0.8rem; color: var(--text-secondary); margin-top: 2px; }
+.student-card .s-class { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
+.student-card .s-ble   { display: inline-block; margin-top: 8px; font-size: 0.72rem; padding: 3px 10px; border-radius: 20px; background: rgba(59,130,246,0.1); color: var(--accent-blue); }
+
+.no-data-card {
+  text-align: center; color: var(--text-muted);
+  padding: 60px 20px;
+  grid-column: 1/-1;
+}
+
+/* ===== FOOTER ===== */
+.footer {
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border);
+  padding: 12px 28px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  flex-wrap: wrap;
+  gap: 8px;
+}
+#backend-status { color: var(--accent-red); font-weight: 600; }
+#backend-status.online { color: var(--accent-green); }
+
+/* ===== SCROLLBAR ===== */
+::-webkit-scrollbar       { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-secondary); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent-blue); }
+
+/* ===== ATTENDANCE WINDOW BANNER ===== */
+.att-window-banner {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-size: 0.82rem; font-weight: 600;
+  margin-bottom: 16px;
+  border: 1px solid;
+}
+.att-window-banner.open  { background: rgba(16,185,129,0.1); border-color: var(--accent-green); color: var(--accent-green); }
+.att-window-banner.closed { background: rgba(239,68,68,0.1);  border-color: var(--accent-red);   color: var(--accent-red); }
+.att-window-banner .win-dot { width:8px; height:8px; border-radius:50%; background:currentColor; animation: pulse 1.5s infinite; }
+
+/* ===== PRESENCE BAR CHART ===== */
+.presence-chart-wrap {
+  margin-top: 10px;
+  background: var(--bg-secondary);
+  border-radius: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+}
+.presence-chart-title { font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 8px; font-weight: 600; }
+.presence-bars {
+  display: flex; align-items: flex-end; gap: 3px;
+  height: 48px; overflow-x: auto;
+}
+.pbar {
+  flex-shrink: 0;
+  width: 8px; border-radius: 2px 2px 0 0;
+  background: var(--accent-green);
+  opacity: 0.85;
+  transition: height 0.4s ease;
+  cursor: pointer;
+  position: relative;
+}
+.pbar:hover { opacity: 1; }
+.pbar.dim { background: var(--border); }
+.pbar-legend { font-size: 0.72rem; color: var(--text-muted); margin-top: 4px; display: flex; justify-content: space-between; }
+
+/* ===== ESP LIVE SIGNAL INDICATOR ===== */
+.esp-live-wrap {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 12px;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  margin-top: 8px; font-size: 0.8rem;
+}
+.esp-mini-bar { display: flex; align-items: flex-end; gap: 2px; height: 18px; }
+.esp-mini-bar .b { width: 5px; background: var(--border); border-radius: 1px; }
+.esp-mini-bar .b.lit { background: var(--accent-green); animation: espFlash 0.6s ease; }
+.esp-mini-bar .b:nth-child(1){height:4px;} .esp-mini-bar .b:nth-child(2){height:8px;}
+.esp-mini-bar .b:nth-child(3){height:12px;} .esp-mini-bar .b:nth-child(4){height:18px;}
+@keyframes espFlash { 0%{opacity:0.3;} 50%{opacity:1;} 100%{opacity:0.85;} }
+.esp-live-label { color: var(--text-secondary); }
+.esp-live-label span { color: var(--accent-green); font-weight: 700; }
+
+/* ===== DAY GROUP HEADER (table) ===== */
+.day-group-row td {
+  background: rgba(59,130,246,0.07);
+  color: var(--accent-blue);
+  font-weight: 700;
+  font-size: 0.8rem;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--border);
+  letter-spacing: 0.04em;
+}
+
+/* ===== PRESENCE MINUTES BADGE ===== */
+.mins-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: rgba(16,185,129,0.12);
+  border: 1px solid rgba(16,185,129,0.25);
+  color: var(--accent-green);
+  border-radius: 6px; padding: 2px 7px;
+  font-size: 0.75rem; font-weight: 600;
+}
+.mins-badge.zero { background: rgba(71,85,105,0.15); border-color: var(--border); color: var(--text-muted); }
+
+/* ===== QUANTUM SECURITY TAB ===== */
+.quantum-hero {
+  background: linear-gradient(135deg, #1a0533 0%, #0f172a 50%, #0d1b3e 100%);
+  border: 1px solid #7c3aed;
+  border-radius: var(--radius);
+  padding: 28px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+.quantum-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 0%, rgba(139,92,246,0.15) 0%, transparent 70%);
+  pointer-events: none;
+}
+.quantum-hero h2 { font-size: 1.6rem; color: #a78bfa; margin-bottom: 6px; }
+.quantum-hero p  { color: var(--text-secondary); font-size: 0.88rem; }
+.quantum-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: rgba(139,92,246,0.15);
+  border: 1px solid #7c3aed;
+  border-radius: 20px;
+  padding: 6px 16px;
+  font-size: 0.8rem; font-weight: 600; color: #a78bfa;
+  margin-top: 12px;
+  animation: pulse 2s infinite;
+}
+.quantum-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+@media(max-width: 800px) { .quantum-grid { grid-template-columns: 1fr; } }
+.q-stat-card {
+  background: var(--bg-card);
+  border: 1px solid #3b1f6b;
+  border-radius: var(--radius);
+  padding: 18px;
+  position: relative;
+  overflow: hidden;
+  transition: var(--transition);
+}
+.q-stat-card:hover { border-color: #7c3aed; transform: translateY(-2px); }
+.q-stat-card::after {
+  content: '';
+  position: absolute;
+  top: 0; right: 0;
+  width: 80px; height: 80px;
+  background: radial-gradient(circle, rgba(139,92,246,0.08) 0%, transparent 70%);
+}
+.q-stat-icon { font-size: 1.8rem; margin-bottom: 8px; }
+.q-stat-label { font-size: 0.75rem; color: var(--text-secondary); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+.q-stat-value { font-size: 0.95rem; font-weight: 700; color: #a78bfa; margin-top: 4px; word-break: break-all; }
+.q-stat-sub   { font-size: 0.72rem; color: var(--text-muted); margin-top: 2px; }
+.q-shield-row {
+  display: flex; flex-direction: column; gap: 10px;
+  margin-bottom: 16px;
+}
+.q-shield-item {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--bg-secondary);
+  border: 1px solid #2a1f4a;
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 0.85rem;
+  transition: var(--transition);
+}
+.q-shield-item:hover { border-color: #7c3aed; }
+.q-shield-icon { font-size: 1.3rem; flex-shrink: 0; }
+.q-shield-info { flex: 1; }
+.q-shield-info strong { color: var(--text-primary); }
+.q-shield-info span   { color: var(--text-secondary); font-size: 0.78rem; margin-left: 8px; }
+.q-status-pill {
+  font-size: 0.7rem; font-weight: 700;
+  padding: 3px 10px; border-radius: 20px;
+  background: rgba(16,185,129,0.1); color: var(--accent-green);
+  border: 1px solid var(--accent-green);
+  white-space: nowrap;
+}
+.q-audit-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+.q-audit-table th { padding: 8px 10px; background: var(--bg-secondary); color: var(--text-secondary); font-weight: 600; text-align: left; border-bottom: 1px solid var(--border); }
+.q-audit-table td { padding: 8px 10px; border-bottom: 1px solid rgba(42,58,92,0.3); }
+.q-event-badge {
+  display: inline-block; padding: 2px 8px; border-radius: 4px;
+  font-size: 0.7rem; font-weight: 700; background: rgba(139,92,246,0.12); color: #a78bfa;
+}
+.q-key-preview {
+  font-family: monospace; font-size: 0.72rem; color: #7c3aed;
+  background: rgba(139,92,246,0.05); padding: 2px 6px; border-radius: 4px;
+}
+.q-no-data { text-align: center; color: var(--text-muted); padding: 20px; }
+  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+</head>
+<body>
+
+  <!-- ===== HEADER ===== -->
+  <header class="header">
+    <div class="header-left">
+      <div class="logo">🎓</div>
+      <div class="header-text">
+        <h1>NEXUS · Smart Attendance</h1>
+        <p>Face Recognition · BLE Verification · Real-time Tracking</p>
+      </div>
+    </div>
+    <div class="header-right">
+      <span id="live-clock" class="clock"></span>
+      <span class="status-dot" id="server-status-dot"></span>
+      <span id="server-status-text">Connecting...</span>
+    </div>
+  </header>
+
+  <!-- ===== NAV TABS ===== -->
+  <nav class="nav-bar">
+    <button class="nav-btn active" onclick="showTab('mark-attendance')" id="tab-markattendance">📸 Mark Attendance</button>
+    <button class="nav-btn" onclick="showTab('enroll')" id="tab-enroll">➕ Enroll Student</button>
+    <button class="nav-btn" onclick="showTab('records')" id="tab-records">📋 Attendance Records</button>
+    <button class="nav-btn" onclick="showTab('ble-monitor')" id="tab-blemonitor">📡 BLE Monitor</button>
+    <button class="nav-btn" onclick="showTab('students')" id="tab-students">👥 Students</button>
+    <button class="nav-btn" onclick="showTab('quantum')" id="tab-quantum" style="color:#a78bfa;">⚛️ Quantum Security</button>
+  </nav>
+
+  <!-- ===== MAIN CONTENT ===== -->
+  <main class="main-content">
+
+    <!-- ========== TAB 1: MARK ATTENDANCE ========== -->
+    <section id="mark-attendance" class="tab-section active">
+      <div class="section-header">
+        <h2>📸 Mark Attendance</h2>
+        <p>Step 1: Face Detected → Step 2: BLE Verified → ✅ Attendance Marked</p>
+      </div>
+
+      <!-- Attendance Window Banner -->
+      <div class="att-window-banner closed" id="att-window-banner">
+        <span class="win-dot"></span>
+        <span id="att-window-text">Checking window status...</span>
+      </div>
+
+      <div class="attendance-grid">
+        <!-- Camera Feed -->
+        <div class="card camera-card">
+          <h3>📷 Live Camera Feed</h3>
+          <div class="camera-box" id="camera-box">
+            <img id="video-feed" style="display:none; width:100%; height:100%; object-fit:cover;" alt="Camera Feed" />
+            <div id="camera-placeholder" class="camera-placeholder">
+              <div class="camera-icon">📷</div>
+              <p>Camera feed loads when backend is running</p>
+              <small>Start: <code>python backend.py</code></small>
+            </div>
+          </div>
+          <div class="camera-controls">
+            <button class="btn btn-power-off" id="btn-camera-toggle" onclick="toggleCameraPower()">OFF Camera</button>
+            <button class="btn btn-primary" id="btn-start-recognition" onclick="startRecognition()">Start Recognition</button>
+            <button class="btn btn-danger" id="btn-stop-recognition" onclick="stopRecognition()" disabled>Stop</button>
+            <button class="btn btn-secondary" id="btn-mark-again" onclick="startRecognition()" style="display:none;">Mark Again</button>
+          </div>
+        </div>
+
+        <!-- Status Panel -->
+        <div class="status-panel">
+          <!-- Step 1: Face -->
+          <div class="step-card" id="step1-card">
+            <div class="step-number">1</div>
+            <div class="step-info">
+              <h4>Face Recognition</h4>
+              <p id="step1-status">Waiting to start...</p>
+              <div class="step-result" id="step1-result"></div>
+            </div>
+            <div class="step-icon" id="step1-icon">⏳</div>
+          </div>
+
+          <!-- Step 2: BLE -->
+          <div class="step-card" id="step2-card">
+            <div class="step-number">2</div>
+            <div class="step-info">
+              <h4>BLE Device Verification</h4>
+              <p id="step2-status">Waiting for face first...</p>
+              <div class="step-result" id="step2-result"></div>
+            </div>
+            <div class="step-icon" id="step2-icon">🔒</div>
+          </div>
+
+          <!-- Final Result -->
+          <div class="result-card" id="final-result-card">
+            <div id="final-result-icon">🎯</div>
+            <div id="final-result-text">Awaiting verification...</div>
+          </div>
+
+          <!-- Detected Student Info -->
+          <div class="student-detected-card" id="student-detected-card" style="display:none;">
+            <div class="student-avatar" id="detected-avatar">👤</div>
+            <div class="student-detected-info">
+              <h4 id="detected-name">—</h4>
+              <p id="detected-roll">Roll No: —</p>
+              <p id="detected-class">Class: —</p>
+              <p id="detected-time">Time: —</p>
+            </div>
+          </div>
+
+          <!-- ESP Live Signal Indicator -->
+          <div class="esp-live-wrap" id="esp-live-wrap" style="display:none;">
+            <div class="esp-mini-bar" id="esp-mini-bar">
+              <div class="b"></div><div class="b"></div><div class="b"></div><div class="b"></div>
+            </div>
+            <div class="esp-live-label">ESP Signal: <span id="esp-signal-count">—</span> in window · <span id="esp-mins-total">0</span> min today</div>
+          </div>
+
+          <!-- Presence Bar Chart -->
+          <div class="presence-chart-wrap" id="presence-chart-wrap" style="display:none;">
+            <div class="presence-chart-title">📊 Today's Presence Timeline (1-min bars)</div>
+            <div class="presence-bars" id="presence-bars"></div>
+            <div class="pbar-legend"><span>09:00</span><span>16:50</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== TAB 2: ENROLL STUDENT ========== -->
+    <section id="enroll" class="tab-section">
+      <div class="section-header">
+        <h2>➕ Enroll New Student</h2>
+        <p>Register student details + capture face + assign BLE device</p>
+      </div>
+
+      <div class="enroll-grid">
+        <!-- Student Details Form -->
+        <div class="card">
+          <h3>📝 Student Details</h3>
+          <form id="enroll-form" onsubmit="enrollStudent(event)">
+            <div class="form-group">
+              <label for="enroll-name">Full Name *</label>
+              <input type="text" id="enroll-name" placeholder="e.g. Arjun Reddy" required />
+            </div>
+            <div class="form-group">
+              <label for="enroll-roll">Roll Number *</label>
+              <input type="text" id="enroll-roll" placeholder="e.g. 21CS001" required />
+            </div>
+            <div class="form-group">
+              <label for="enroll-class">Class *</label>
+              <input type="text" id="enroll-class" placeholder="e.g. CSE-A" required />
+            </div>
+            <div class="form-group">
+              <label for="enroll-section">Section</label>
+              <input type="text" id="enroll-section" placeholder="e.g. A" />
+            </div>
+            <div class="form-group">
+              <label for="enroll-mac">BLE Device MAC Address *</label>
+              <input type="text" id="enroll-mac" placeholder="e.g. AA:BB:CC:DD:EE:FF" required />
+              <small>MAC address of student's ESP32 tracker</small>
+            </div>
+            <div class="form-group">
+              <label for="enroll-device-name">BLE Device Name</label>
+              <input type="text" id="enroll-device-name" placeholder="e.g. STU-001" />
+            </div>
+
+            <div class="enroll-steps">
+              <div class="enroll-step" id="enroll-step-details">
+                <span class="estep-num">1</span> Fill Details
+                <span class="estep-check" id="echeck1">✓</span>
+              </div>
+              <div class="enroll-step" id="enroll-step-face">
+                <span class="estep-num">2</span> Capture Face
+                <span class="estep-check" id="echeck2"></span>
+              </div>
+              <div class="enroll-step" id="enroll-step-save">
+                <span class="estep-num">3</span> Save to Database
+                <span class="estep-check" id="echeck3"></span>
+              </div>
+            </div>
+
+            <button type="button" class="btn btn-secondary" onclick="captureEnrollFace()" id="btn-capture-face">
+              Capture Face Photo
+            </button>
+            <div id="enroll-face-preview" class="face-preview" style="display:none;"></div>
+            <button type="submit" class="btn btn-primary" id="btn-enroll-submit">
+              Enroll Student
+            </button>
+          </form>
+          <div id="enroll-message" class="message-box" style="display:none;"></div>
+        </div>
+
+        <!-- Live Camera for Enrollment -->
+        <div class="card camera-card">
+          <h3>📷 Enrollment Camera</h3>
+          <div class="camera-box">
+            <img id="enroll-video-feed" style="display:none; width:100%; height:100%; object-fit:cover;" alt="Enrollment Camera" />
+            <div id="enroll-camera-placeholder" class="camera-placeholder">
+              <div class="camera-icon">📷</div>
+              <p>Live feed for face capture</p>
+              <small>Backend must be running</small>
+            </div>
+          </div>
+          <div class="camera-controls">
+            <button class="btn btn-power-off" id="btn-enroll-camera-toggle" onclick="toggleCameraPower()">OFF Camera</button>
+            <button class="btn btn-secondary" onclick="switchCameraFeeds()">Refresh Feed</button>
+          </div>
+          <div class="tips-box">
+            <h4>📌 Tips for Good Enrollment:</h4>
+            <ul>
+              <li>Face the camera directly</li>
+              <li>Good lighting on face</li>
+              <li>No glasses or mask</li>
+              <li>Neutral expression</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== TAB 3: ATTENDANCE RECORDS ========== -->
+    <section id="records" class="tab-section">
+      <div class="section-header">
+        <h2>📋 Attendance Records</h2>
+        <p>Sorted day-wise · Backend-driven presence tracking</p>
+      </div>
+
+      <div class="records-controls card">
+        <div class="filter-row">
+          <div class="form-group">
+            <label for="filter-date">Date</label>
+            <input type="date" id="filter-date" />
+          </div>
+          <div class="form-group">
+            <label for="filter-class">Class</label>
+            <input type="text" id="filter-class" placeholder="e.g. CSE-A" />
+          </div>
+          <div class="form-group">
+            <label for="filter-status">Status</label>
+            <select id="filter-status">
+              <option value="">All</option>
+              <option value="present">Present</option>
+              <option value="suspicious">Suspicious</option>
+              <option value="absent">Absent</option>
+            </select>
+          </div>
+          <button class="btn btn-primary" onclick="loadAttendance()">🔍 Search</button>
+          <button class="btn btn-secondary" onclick="exportCSV()">📥 Export CSV</button>
+          <button class="btn btn-secondary" onclick="triggerEOD()" id="btn-eod" title="Force end-of-day consolidation">🔚 EOD Sync</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="table-summary" id="records-summary">
+          <span>Total: <strong id="rec-total">0</strong></span>
+          <span>Present: <strong id="rec-present" class="text-green">0</strong></span>
+          <span>Suspicious: <strong id="rec-suspicious" style="color:var(--accent-yellow)">0</strong></span>
+          <span>Absent: <strong id="rec-absent" class="text-red">0</strong></span>
+        </div>
+        <div class="table-wrapper">
+          <table id="attendance-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Name</th>
+                <th>Roll No</th>
+                <th>Class</th>
+                <th>Time In</th>
+                <th>Last Seen</th>
+                <th>Mins Present</th>
+                <th>Face ✓</th>
+                <th>BLE ✓</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="attendance-tbody">
+              <tr>
+                <td colspan="10" class="no-data">Click Search to load records</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== TAB 4: BLE MONITOR ========== -->
+    <section id="ble-monitor" class="tab-section">
+      <div class="section-header">
+        <h2>📡 BLE Device Monitor</h2>
+        <p>Live scan of BLE devices (ESP32 beacons) in range</p>
+      </div>
+
+      <div class="ble-grid">
+        <div class="card">
+          <div class="ble-controls">
+            <button class="btn btn-primary" id="btn-ble-scan" onclick="startBLEScan()">📡 Start BLE Scan</button>
+            <button class="btn btn-danger" id="btn-ble-stop" onclick="stopBLEScan()" disabled>⏹ Stop Scan</button>
+            <span class="ble-status-text" id="ble-scan-status">Not scanning</span>
+          </div>
+
+          <div class="ble-devices-list" id="ble-devices-list">
+            <div class="no-devices">
+              <div style="font-size:3rem;">📡</div>
+              <p>No BLE devices detected</p>
+              <small>Start scan to detect ESP32 beacons</small>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>📊 Signal Strength Radar</h3>
+          <div class="radar-container">
+            <canvas id="radar-canvas" width="300" height="300"></canvas>
+          </div>
+          <div class="radar-legend">
+            <span class="legend-dot green"></span> Strong (&gt; -60 dBm)
+            <span class="legend-dot yellow"></span> Medium (-60 to -80 dBm)
+            <span class="legend-dot red"></span> Weak (&lt; -80 dBm)
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== TAB 5: STUDENTS LIST ========== -->
+    <section id="students" class="tab-section">
+      <div class="section-header">
+        <h2>👥 Enrolled Students</h2>
+        <p>All registered students in the system</p>
+      </div>
+
+      <div class="students-controls card">
+        <div class="filter-row">
+          <input type="text" id="student-search" placeholder="🔍 Search by name or roll no..." oninput="filterStudents()" />
+          <button class="btn btn-primary" onclick="loadStudents()">🔄 Refresh List</button>
+          <button class="btn btn-secondary" onclick="reloadBackendDB(event)">🗃️ Refresh Database</button>
+        </div>
+      </div>
+
+      <div class="students-grid" id="students-grid">
+        <div class="no-data-card">
+          <div style="font-size:3rem;">👥</div>
+          <p>Click Refresh to load students</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== TAB 6: QUANTUM SECURITY ========== -->
+    <section id="quantum" class="tab-section">
+
+      <!-- Hero Banner -->
+      <div class="quantum-hero">
+        <div style="font-size:2.5rem;">⚛️</div>
+        <h2>Quantum Security Layer</h2>
+        <p>CRYSTALS-Kyber-1024 KEM · CRYSTALS-Dilithium Signatures · AES-256-GCM</p>
+        <div class="quantum-badge">
+          <span style="width:8px;height:8px;border-radius:50%;background:#a78bfa;display:inline-block;"></span>
+          NIST FIPS 203 + FIPS 204 · Post-Quantum Cryptography Active
+        </div>
+      </div>
+
+      <!-- Status Grid -->
+      <div class="quantum-grid" id="quantum-stats-grid">
+        <div class="q-stat-card">
+          <div class="q-stat-icon">🔑</div>
+          <div class="q-stat-label">KEM Algorithm</div>
+          <div class="q-stat-value" id="q-kem">Loading...</div>
+          <div class="q-stat-sub" id="q-nist">NIST Standard</div>
+        </div>
+        <div class="q-stat-card">
+          <div class="q-stat-icon">✍️</div>
+          <div class="q-stat-label">Signature Scheme</div>
+          <div class="q-stat-value" id="q-sig">Loading...</div>
+          <div class="q-stat-sub">Quantum-resistant signing</div>
+        </div>
+        <div class="q-stat-card">
+          <div class="q-stat-icon">🔐</div>
+          <div class="q-stat-label">Session Public Key</div>
+          <div class="q-stat-value q-key-preview" id="q-pubkey">—</div>
+          <div class="q-stat-sub" id="q-keygen-ms">Key generation time</div>
+        </div>
+        <div class="q-stat-card">
+          <div class="q-stat-icon">🎲</div>
+          <div class="q-stat-label">Entropy Source</div>
+          <div class="q-stat-value" id="q-entropy">Loading...</div>
+          <div class="q-stat-sub">QRNG-class hardware entropy</div>
+        </div>
+      </div>
+
+      <!-- Protection Shields -->
+      <div class="card" style="margin-bottom:16px;">
+        <h3>🛡️ Active Quantum Protections</h3>
+        <div class="q-shield-row" id="q-shields">
+          <div class="q-shield-item">
+            <div class="q-shield-icon">🧬</div>
+            <div class="q-shield-info"><strong>Face Encodings</strong><span>Loading...</span></div>
+            <span class="q-status-pill">PQC ACTIVE</span>
+          </div>
+          <div class="q-shield-item">
+            <div class="q-shield-icon">📡</div>
+            <div class="q-shield-info"><strong>BLE Tokens</strong><span>HMAC-SHA3-256, rotates every 60s</span></div>
+            <span class="q-status-pill">PQC ACTIVE</span>
+          </div>
+          <div class="q-shield-item">
+            <div class="q-shield-icon">🔑</div>
+            <div class="q-shield-info"><strong>Key Exchange</strong><span>Kyber-1024 KEM (LWE lattice)</span></div>
+            <span class="q-status-pill">PQC ACTIVE</span>
+          </div>
+          <div class="q-shield-item">
+            <div class="q-shield-icon">☁️</div>
+            <div class="q-shield-info"><strong>Cloud Data</strong><span>AES-256-GCM (Grover-resistant)</span></div>
+            <span class="q-status-pill">PQC ACTIVE</span>
+          </div>
+        </div>
+        <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap;">
+          <button class="btn btn-primary" onclick="loadQuantumStatus()" id="btn-q-refresh" style="background:linear-gradient(135deg,#7c3aed,#4f46e5);">⚛️ Refresh Status</button>
+          <button class="btn btn-secondary" onclick="loadQuantumAudit()">📋 Load Audit Log</button>
+          <button class="btn btn-secondary" onclick="triggerKeygen()">🔑 New Key Pair</button>
+        </div>
+        <div id="q-threat-box" style="margin-top:12px;padding:10px 14px;border-radius:8px;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);font-size:0.8rem;color:#fca5a5;"></div>
+      </div>
+
+      <!-- Quantum Audit Log -->
+      <div class="card">
+        <h3>📋 Quantum Audit Log <span style="font-size:0.75rem;color:var(--text-muted);font-weight:400;">— Signed with Dilithium</span></h3>
+        <div class="table-wrapper">
+          <table class="q-audit-table">
+            <thead>
+              <tr>
+                <th>Timestamp</th>
+                <th>Event</th>
+                <th>Entity</th>
+                <th>Detail</th>
+                <th>Signature</th>
+              </tr>
+            </thead>
+            <tbody id="q-audit-tbody">
+              <tr><td colspan="5" class="q-no-data">Click "Load Audit Log" to view events</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ===== FOOTER ===== -->
+  <footer class="footer">
+    <span>NEXUS Smart Attendance &copy; 2026</span>
+    <span>MediaPipe FRS · BLE Tracker · Supabase</span>
+    <span id="footer-status">Backend: <span id="backend-status">offline</span></span>
+  </footer>
+
+  <script>
+/* ============================================
+   SMART ATTENDANCE SYSTEM - FRONTEND LOGIC
+   Talks to Python Flask backend at port 5000
+   All API calls centralized - No Collision
+   ============================================ */
+
+// ─── CONFIG ───────────────────────────────────
+// Explicitly setting API URL so the frontend works even if you
+// just double-click index.html instead of hitting localhost:5000
+const API = 'http://127.0.0.1:5000';
+let recognitionActive = false;
+
+let bleScanActive     = false;
+let videoFeedInterval = null;
+let bleInterval       = null;
+let radarAnimFrame    = null;
+let bleDevices        = [];             // live BLE device list
+let allStudents       = [];             // cached students
+
+// ─── CAMERA STATE ──────────────────────────────
+const CAM_MAX_RETRIES  = 5;            // max reconnect attempts per feed
+const CAM_RETRY_BASE   = 2000;         // base delay (ms) for exponential back-off
+let _camRunning        = false;        // true when feeds are actively streaming
+let _camEnabled        = true;         // user-controlled power state
+let activeTab          = 'mark-attendance'; // Track active tab for smart routing
+
+// ─── INIT ──────────────────────────────────────
+let _currentDetectedStudentId = null; // Track verified student for ESP bar
+
+window.addEventListener('DOMContentLoaded', () => {
+  startClock();
+  checkBackendStatus();
+  setInterval(checkBackendStatus, 5000);
+  setInterval(checkAttendanceWindow, 10000); // Poll window status
+  drawRadar([]);
+  setTodayDate();
+  checkAttendanceWindow();
+});
+
+// ─── ATTENDANCE WINDOW STATUS ──────────────────
+async function checkAttendanceWindow() {
+  try {
+    const res  = await fetch(`${API}/status`);
+    const data = await res.json();
+    const banner = document.getElementById('att-window-banner');
+    const text   = document.getElementById('att-window-text');
+    if (!banner) return;
+    if (data.attendance_window) {
+      banner.className = 'att-window-banner open';
+      text.textContent = `✅ Attendance Window OPEN: ${data.window_start} – ${data.window_end}`;
+    } else {
+      banner.className = 'att-window-banner closed';
+      text.textContent = `🔒 Attendance Window CLOSED (${data.window_start} – ${data.window_end})`;
+    }
+  } catch {}
+}
+
+// ─── ESP LIVE BAR (polls /esp/state every 6s) ──
+let _espPollInterval = null;
+
+function startESPLiveBar(studentId) {
+  _currentDetectedStudentId = studentId;
+  document.getElementById('esp-live-wrap').style.display = 'flex';
+  document.getElementById('presence-chart-wrap').style.display = 'block';
+  pollESPState();
+  if (_espPollInterval) clearInterval(_espPollInterval);
+  _espPollInterval = setInterval(pollESPState, 6000);
+}
+
+function stopESPLiveBar() {
+  _currentDetectedStudentId = null;
+  if (_espPollInterval) { clearInterval(_espPollInterval); _espPollInterval = null; }
+}
+
+async function pollESPState() {
+  if (!_currentDetectedStudentId) return;
+  try {
+    // 1) Get live ESP signal state
+    const res  = await fetch(`${API}/esp/state`);
+    const data = await res.json();
+    const state = (data.esp_state || {})[_currentDetectedStudentId];
+
+    const bars   = document.querySelectorAll('#esp-mini-bar .b');
+    const countEl = document.getElementById('esp-signal-count');
+    if (state && state.signal_count > 0) {
+      const barsLit = state.signal_count >= 8 ? 4 : state.signal_count >= 4 ? 3 : state.signal_count >= 2 ? 2 : 1;
+      bars.forEach((b, i) => { b.className = 'b' + (i < barsLit ? ' lit' : ''); });
+      countEl.textContent = state.signal_count + ` (${Math.round(state.window_elapsed)}s window)`;
+    } else {
+      bars.forEach(b => b.className = 'b');
+      countEl.textContent = 'Waiting...';
+    }
+
+    // 2) Get today's presence log for bar chart
+    const pres = await fetch(`${API}/attendance/presence/${_currentDetectedStudentId}`);
+    const pd   = await pres.json();
+    renderPresenceBars(pd.log || []);
+
+    // Update total minutes
+    const minsEl = document.getElementById('esp-mins-total');
+    const totalMins = (pd.log || []).length; // each log row = 1 minute
+    if (minsEl) minsEl.textContent = totalMins;
+  } catch {}
+}
+
+function renderPresenceBars(log) {
+  const container = document.getElementById('presence-bars');
+  if (!container) return;
+  if (log.length === 0) {
+    container.innerHTML = '<span style="font-size:0.75rem;color:var(--text-muted);align-self:center;">No ESP presence logged yet today</span>';
+    return;
+  }
+  // Map windows to 09:00-16:50, each bar = 1 min slot
+  const maxSig = Math.max(...log.map(l => l.esp_signals), 1);
+  container.innerHTML = log.map(l => {
+    const h = Math.max(8, Math.round((l.esp_signals / maxSig) * 48));
+    const t = new Date(l.window_ts).toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit'});
+    return `<div class="pbar" style="height:${h}px" title="${t} · ${l.esp_signals} signals"></div>`;
+  }).join('');
+}
+
+// ─── CLOCK ─────────────────────────────────────
+function startClock() {
+  function tick() {
+    const now = new Date();
+    document.getElementById('live-clock').textContent =
+      now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  }
+  tick();
+  setInterval(tick, 1000);
+}
+
+function setTodayDate() {
+  const today = new Date().toISOString().split('T')[0];
+  const el = document.getElementById('filter-date');
+  if (el) el.value = today;
+}
+
+// ─── TAB NAVIGATION ────────────────────────────
+const TAB_IDS = {
+  'mark-attendance': 'tab-markattendance',
+  'enroll':          'tab-enroll',
+  'records':         'tab-records',
+  'ble-monitor':     'tab-blemonitor',
+  'students':        'tab-students',
+  'quantum':         'tab-quantum'
+};
+
+function showTab(tabId) {
+  activeTab = tabId;
+
+  // Hide all tabs
+  document.querySelectorAll('.tab-section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+
+  // Show selected tab
+  document.getElementById(tabId).classList.add('active');
+  const btnId = TAB_IDS[tabId];
+  if (btnId) document.getElementById(btnId).classList.add('active');
+
+  // Load data for tabs that need it
+  if (tabId === 'records')  loadAttendance();
+  if (tabId === 'students') loadStudents();
+  if (tabId === 'quantum')  loadQuantumStatus();
+
+  // Smartly route camera to the active tab
+  if (typeof switchCameraFeeds === 'function') switchCameraFeeds();
+}
+
+// ─── QUANTUM SECURITY ──────────────────────────
+async function loadQuantumStatus() {
+  const btn = document.getElementById('btn-q-refresh');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Loading...'; }
+  try {
+    const res  = await fetch(`${API}/quantum/status`);
+    const data = await res.json();
+
+    document.getElementById('q-kem').textContent     = data.kem_algorithm    || '—';
+    document.getElementById('q-sig').textContent     = data.signature_scheme || '—';
+    document.getElementById('q-pubkey').textContent  = data.public_key_preview || '—';
+    document.getElementById('q-entropy').textContent = data.entropy_source   || '—';
+    document.getElementById('q-nist').textContent    = data.nist_standard    || '—';
+    document.getElementById('q-keygen-ms').textContent = `Key gen: ${data.keygen_ms || 0} ms`;
+
+    // Update face encoding shield with encryption algo
+    const shields = document.querySelectorAll('#q-shields .q-shield-item');
+    if (shields[0]) shields[0].querySelector('span').textContent =
+      data.encryption + ' · ' + (data.pycryptodome ? 'pycryptodome ✓' : 'fallback mode');
+
+    // Threat info box
+    const tbox = document.getElementById('q-threat-box');
+    if (tbox) tbox.textContent = '⚠️ Quantum Threat: ' + (data.quantum_threat || 'Unknown');
+
+    // Load audit log too
+    loadQuantumAudit();
+  } catch {
+    document.getElementById('q-kem').textContent = '⚠️ Backend offline';
+  }
+  if (btn) { btn.disabled = false; btn.textContent = '⚛️ Refresh Status'; }
+}
+
+async function loadQuantumAudit() {
+  const tbody = document.getElementById('q-audit-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="5" class="q-no-data">Loading...</td></tr>';
+  try {
+    const res  = await fetch(`${API}/quantum/audit?limit=20`);
+    const data = await res.json();
+    if (!data.audit_log || data.audit_log.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" class="q-no-data">No audit events yet. Enroll a student or mark attendance to generate events.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = data.audit_log.map(e => {
+      const t = new Date(e.ts).toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+      const eid = (e.entity_id || '').substring(0, 8) + '...';
+      return `<tr>
+        <td style="color:var(--text-muted);">${t}</td>
+        <td><span class="q-event-badge">${e.event}</span></td>
+        <td><code style="font-size:0.72rem;">${eid}</code></td>
+        <td style="color:var(--text-secondary);">${e.detail}</td>
+        <td><span class="q-key-preview">${e.signature || '—'}</span></td>
+      </tr>`;
+    }).join('');
+  } catch {
+    tbody.innerHTML = '<tr><td colspan="5" class="q-no-data">⚠️ Backend not reachable</td></tr>';
+  }
+}
+
+async function triggerKeygen() {
+  try {
+    const res  = await fetch(`${API}/quantum/keygen`, { method: 'POST' });
+    const data = await res.json();
+    document.getElementById('q-pubkey').textContent    = data.public_key || '—';
+    document.getElementById('q-keygen-ms').textContent = `Key gen: ${data.keygen_ms || 0} ms`;
+    document.getElementById('q-kem').textContent       = data.algorithm  || '—';
+    loadQuantumAudit();
+    alert(`✅ New Kyber-1024 key pair generated!\nAlgorithm: ${data.algorithm}\nGen time: ${data.keygen_ms} ms`);
+  } catch {
+    alert('⚠️ Backend not reachable.');
+  }
+}
+
+
+// ─── BACKEND STATUS CHECK ──────────────────────
+async function checkBackendStatus() {
+  try {
+    const res = await fetch(`${API}/status`, { method: 'GET' });
+    if (res.ok) {
+      setBackendOnline(true);
+    } else {
+      setBackendOnline(false);
+    }
+  } catch {
+    setBackendOnline(false);
+  }
+}
+
+function setBackendOnline(online) {
+  const dot  = document.getElementById('server-status-dot');
+  const txt  = document.getElementById('server-status-text');
+  const foot = document.getElementById('backend-status');
+
+  if (online) {
+    dot.classList.add('online');
+    txt.textContent = 'Backend Online';
+    if (foot) { foot.textContent = 'online'; foot.classList.add('online'); }
+    if (_camEnabled) startCameraFeeds();
+    else _updateCameraPowerUI();
+  } else {
+    dot.classList.remove('online');
+    txt.textContent = 'Backend Offline';
+    if (foot) { foot.textContent = 'offline'; foot.classList.remove('online'); }
+    stopCameraFeeds();
+  }
+}
+
+// ─── CAMERA MANAGEMENT ────────────────────────────────────────────
+
+/** Safely unbinds an image stream and replaces it with a placeholder message */
+function _detachFeed(feedId, placeholderId, retryRef, pmsg, psub) {
+  if (retryRef && retryRef.timer) { clearTimeout(retryRef.timer); retryRef.timer = null; }
+  const feed = document.getElementById(feedId);
+  const ph   = document.getElementById(placeholderId);
+  if (feed) {
+    feed.onload  = null;
+    feed.onerror = null;
+    feed.removeAttribute('src');
+    feed.style.display = 'none';
+  }
+  if (ph) {
+    ph.style.display = 'flex';
+    const icon = ph.querySelector('.camera-icon');
+    const msg  = ph.querySelector('p');
+    const sub  = ph.querySelector('small');
+    if (icon) icon.textContent = '📷';
+    if (msg)  msg.textContent  = pmsg;
+    if (sub)  sub.textContent  = psub;
+  }
+}
+
+/** Binds an MJPEG stream forcefully */
+function _attachFeed(feedId, placeholderId, retryRef) {
+  const feed = document.getElementById(feedId);
+  const ph   = document.getElementById(placeholderId);
+  if (!feed) return;
+
+  if (retryRef && retryRef.timer) { clearTimeout(retryRef.timer); retryRef.timer = null; }
+
+  // Forcefully show the stream and hide the placeholder
+  feed.style.display = 'block';
+  if (ph) ph.style.display = 'none';
+
+  // Apply a cross-origin attribute just in case the browser is blocking local media sharing
+  feed.setAttribute('crossorigin', 'anonymous');
+  
+  feed.src = `${API}/video_feed?t=${Date.now()}`;
+}
+
+/** Smartly attach camera only to the visible tab, drop the connection on the hidden tab */
+function switchCameraFeeds() {
+  if (!_camRunning) return;
+
+  switchCameraFeeds._main   = switchCameraFeeds._main   || { count: 0, timer: null };
+  switchCameraFeeds._enroll = switchCameraFeeds._enroll || { count: 0, timer: null };
+
+  if (activeTab === 'mark-attendance') {
+    _detachFeed('enroll-video-feed', 'enroll-camera-placeholder', switchCameraFeeds._enroll, 'Live feed for face capture', 'Camera paused (Tab inactive)');
+    _attachFeed('video-feed', 'camera-placeholder', switchCameraFeeds._main);
+  } else if (activeTab === 'enroll') {
+    _detachFeed('video-feed', 'camera-placeholder', switchCameraFeeds._main, 'Camera feed loads when backend is running', 'Camera paused (Tab inactive)');
+    _attachFeed('enroll-video-feed', 'enroll-camera-placeholder', switchCameraFeeds._enroll);
+  } else {
+    // Other tabs open, drop all feeds
+    _detachFeed('video-feed', 'camera-placeholder', switchCameraFeeds._main, 'Camera feed loads when backend is running', 'Camera paused (Tab inactive)');
+    _detachFeed('enroll-video-feed', 'enroll-camera-placeholder', switchCameraFeeds._enroll, 'Live feed for face capture', 'Camera paused (Tab inactive)');
+  }
+}
+
+/** Start camera (called when backend is confirmed online) */
+function startCameraFeeds() {
+  if (_camRunning) return;
+  _camRunning = true;
+  switchCameraFeeds._main   = switchCameraFeeds._main   || { count: 0, timer: null };
+  switchCameraFeeds._enroll = switchCameraFeeds._enroll || { count: 0, timer: null };
+  switchCameraFeeds._main.count = 0;
+  switchCameraFeeds._enroll.count = 0;
+  switchCameraFeeds();
+}
+
+/** Stop both feeds cleanly (called when backend goes offline) */
+function stopCameraFeeds() {
+  if (!_camRunning) return;
+  _camRunning = false;
+  switchCameraFeeds._main   = switchCameraFeeds._main   || { count: 0, timer: null };
+  switchCameraFeeds._enroll = switchCameraFeeds._enroll || { count: 0, timer: null };
+  _detachFeed('video-feed', 'camera-placeholder', switchCameraFeeds._main, 'Camera feed loads when backend is running', 'Backend must be running');
+  _detachFeed('enroll-video-feed', 'enroll-camera-placeholder', switchCameraFeeds._enroll, 'Live feed for face capture', 'Backend must be running');
+}
+
+/** Manual Power Toggle */
+function toggleCameraPower() {
+  _camEnabled = !_camEnabled;
+  if (!_camEnabled) {
+    console.log("[CAM] Manual Power OFF");
+    _stopCameraFully();
+    stopRecognition(); // Stop any active scanning + clear UI
+    fetch(`${API}/camera/release`, { method: 'POST' }).catch(() => {});
+  } else {
+    console.log("[CAM] Manual Power ON");
+    checkBackendStatus(); // Trigger reconnect
+  }
+  _updateCameraPowerUI();
+}
+
+function _updateCameraPowerUI() {
+  const btns = ['btn-camera-toggle', 'btn-enroll-camera-toggle'];
+  btns.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (_camEnabled) {
+      el.textContent = 'OFF Camera';
+      el.className = 'btn btn-power-off';
+    } else {
+      el.textContent = 'ON Camera';
+      el.className = 'btn btn-power-on';
+    }
+  });
+}
+
+/** Hard stop for battery saving */
+function _stopCameraFully() {
+  _camRunning = false;
+  switchCameraFeeds._main   = switchCameraFeeds._main   || { count: 0, timer: null };
+  switchCameraFeeds._enroll = switchCameraFeeds._enroll || { count: 0, timer: null };
+  
+  _detachFeed('video-feed', 'camera-placeholder', switchCameraFeeds._main, 'Camera is Powered OFF', 'Click ON Camera to resume');
+  _detachFeed('enroll-video-feed', 'enroll-camera-placeholder', switchCameraFeeds._enroll, 'Camera is Powered OFF', 'Click ON Camera to resume');
+}
+
+// ─── MARK ATTENDANCE ───────────────────────────
+let _bleCheckDone = false;  // Prevent double BLE check
+
+function startRecognition() {
+  if (recognitionActive) return;
+  recognitionActive = true;
+  _bleCheckDone = false;
+
+  document.getElementById('btn-start-recognition').disabled = true;
+  document.getElementById('btn-stop-recognition').disabled  = false;
+  document.getElementById('btn-mark-again').style.display   = 'none';
+
+  resetAttendanceUI();
+  setStep(1, 'active', 'Scanning face...');
+
+  fetch(`${API}/recognition/start`, { method: 'POST' }).catch(() => {});
+  videoFeedInterval = setInterval(pollRecognitionResult, 1500);
+}
+
+function stopRecognitionSilent() {
+  // Stops polling + backend but does NOT reset UI (used after result)
+  recognitionActive = false;
+  _bleCheckDone = false;
+  clearInterval(videoFeedInterval);
+  fetch(`${API}/recognition/stop`, { method: 'POST' }).catch(() => {});
+  document.getElementById('btn-start-recognition').disabled = false;
+  document.getElementById('btn-stop-recognition').disabled  = true;
+  document.getElementById('btn-mark-again').style.display   = 'inline-flex';
+}
+
+function stopRecognition() {
+  stopRecognitionSilent();
+  stopESPLiveBar();
+  resetAttendanceUI();
+  // Hide ESP + presence UI on manual stop
+  const ew = document.getElementById('esp-live-wrap');
+  const pw = document.getElementById('presence-chart-wrap');
+  if (ew) ew.style.display = 'none';
+  if (pw) pw.style.display = 'none';
+}
+
+async function pollRecognitionResult() {
+  if (!recognitionActive || _bleCheckDone) return;
+  try {
+    const res  = await fetch(`${API}/recognition/result`);
+    const data = await res.json();
+
+    if (data.face_detected) {
+      if (data.face_identified) {
+        // Stop polling immediately — face found
+        _bleCheckDone = true;
+        clearInterval(videoFeedInterval);
+        setStep(1, 'success', `Identified: ${data.student_name}`, `Confidence: ${data.confidence}%`);
+        setStep(2, 'active', 'Checking BLE device...');
+        await checkBLEForStudent(data);
+      } else {
+        setStep(1, 'error', 'Face not recognized', 'Not in database');
+        setFinalResult(false, 'Face not recognized. Student not enrolled.');
+        stopRecognitionSilent();
+      }
+    } else {
+      setStep(1, 'active', 'Scanning... Position face in camera');
+    }
+  } catch {
+    setStep(1, 'active', 'Backend not responding...');
+  }
+}
+
+async function checkBLEForStudent(data) {
+  try {
+    const res = await fetch(`${API}/ble/check_student/${data.student_id}`);
+    const ble = await res.json();
+
+    if (!ble.device_registered) {
+      setStep(2, 'error', 'No BLE Device Registered', 'No tracker assigned to this student');
+      setFinalResult(false, 'No BLE tracker assigned. Contact admin to register a device.');
+    } else if (ble.device_found) {
+      const rssiTxt = ble.rssi ? ` (RSSI: ${ble.rssi} dBm)` : '';
+      setStep(2, 'success', `BLE Verified: ${ble.device_name}`, `Device detected${rssiTxt}`);
+      setFinalResult(true, `✅ Attendance Marked — ${data.student_name}`);
+      showDetectedStudent(data);
+      await markAttendanceDB(data.student_id, true, true, 'present');
+      // Start live ESP presence bar for this student
+      startESPLiveBar(data.student_id);
+    } else {
+      setStep(2, 'error', 'BLE Device Not Detected', `Registered: ${ble.device_name} — not in scan`);
+      setFinalResult(false, `⚠️ Face verified but BLE tracker (${ble.device_name}) not found. Marked suspicious.`);
+      showDetectedStudent(data);
+      await markAttendanceDB(data.student_id, true, false, 'suspicious');
+      startESPLiveBar(data.student_id); // Still show presence chart even if suspicious
+    }
+  } catch (e) {
+    setStep(2, 'error', 'BLE check failed', e.message);
+  }
+  stopRecognitionSilent();
+}
+
+async function markAttendanceDB(studentId, faceVerified, bleVerified, status) {
+  try {
+    await fetch(`${API}/attendance/mark`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ student_id: studentId, face_verified: faceVerified, ble_verified: bleVerified, status })
+    });
+  } catch { console.error('Attendance DB write failed'); }
+}
+
+// ─── UI HELPERS: ATTENDANCE ─────────────────────
+
+function resetAttendanceUI() {
+  setStep(1, '', 'Waiting to start...');
+  setStep(2, '', 'Waiting for face first...');
+  document.getElementById('final-result-card').className = 'result-card';
+  document.getElementById('final-result-icon').textContent = '🎯';
+  document.getElementById('final-result-text').textContent = 'Awaiting verification...';
+  document.getElementById('student-detected-card').style.display = 'none';
+}
+
+function setStep(num, state, statusText, resultText = '') {
+  const card   = document.getElementById(`step${num}-card`);
+  const status = document.getElementById(`step${num}-status`);
+  const result = document.getElementById(`step${num}-result`);
+  const icon   = document.getElementById(`step${num}-icon`);
+
+  card.className   = 'step-card ' + state;
+  status.textContent = statusText;
+  result.textContent = resultText;
+
+  const icons = { active: '🔍', success: '✅', error: '❌', '': '⏳' };
+  icon.textContent = icons[state] || '⏳';
+}
+
+function setFinalResult(success, message) {
+  const card = document.getElementById('final-result-card');
+  const icon = document.getElementById('final-result-icon');
+  const text = document.getElementById('final-result-text');
+
+  card.className = 'result-card ' + (success ? 'success' : 'error');
+  icon.textContent = success ? '✅' : '❌';
+  text.textContent = message;
+}
+
+function showDetectedStudent(data) {
+  document.getElementById('student-detected-card').style.display = 'flex';
+  document.getElementById('detected-name').textContent  = data.student_name  || '—';
+  document.getElementById('detected-roll').textContent  = 'Roll No: ' + (data.roll_no || '—');
+  document.getElementById('detected-class').textContent = 'Class: '  + (data.class   || '—');
+  document.getElementById('detected-time').textContent  = 'Time: '   + new Date().toLocaleTimeString('en-IN');
+}
+
+// ─── ENROLLMENT ────────────────────────────────
+let enrolledFaceCaptured = false;
+
+async function captureEnrollFace() {
+  const btn = document.getElementById('btn-capture-face');
+  btn.textContent = 'Capturing...';
+  btn.disabled = true;
+
+  try {
+    const res  = await fetch(`${API}/enroll/capture_face`, { method: 'POST' });
+    const data = await res.json();
+
+    if (data.success) {
+      enrolledFaceCaptured = true;
+      // Show live snapshot of what was captured
+      const preview = document.getElementById('enroll-face-preview');
+      preview.style.display = 'block';
+      // Fetch a fresh snapshot to show the captured face
+      const snapUrl = `${API}/snapshot?t=${Date.now()}`;
+      preview.innerHTML = `
+        <div style="text-align:center;">
+          <img src="${snapUrl}" style="width:160px;height:120px;object-fit:cover;border-radius:8px;border:2px solid var(--accent-green);" />
+          <div style="color:var(--accent-green);margin-top:6px;font-weight:600;">Face Captured!</div>
+        </div>`;
+      document.getElementById('echeck2').textContent = '\u2713';
+      document.getElementById('enroll-step-face').style.color = 'var(--accent-green)';
+      showEnrollMessage('success', 'Face captured! Fill details and click Enroll Student.');
+    } else {
+      showEnrollMessage('error', data.message || 'No face detected. Face the camera and try again.');
+    }
+  } catch (e) {
+    showEnrollMessage('error', 'Backend not reachable. Make sure backend.py is running.');
+  }
+
+  btn.textContent = enrolledFaceCaptured ? 'Re-Capture Face' : 'Capture Face Photo';
+  btn.disabled = false;
+}
+
+async function enrollStudent(event) {
+  event.preventDefault();
+
+  if (!enrolledFaceCaptured) {
+    showEnrollMessage('error', 'Step 2: Capture face first before saving!');
+    document.getElementById('btn-capture-face').style.border = '2px solid var(--accent-red)';
+    return;
+  }
+
+  const name    = document.getElementById('enroll-name').value.trim();
+  const roll_no = document.getElementById('enroll-roll').value.trim();
+  const cls     = document.getElementById('enroll-class').value.trim();
+
+  if (!name || !roll_no || !cls) {
+    showEnrollMessage('error', 'Please fill Name, Roll Number and Class fields.');
+    return;
+  }
+
+  const payload = {
+    name,
+    roll_no,
+    class_name:  cls,
+    section:     document.getElementById('enroll-section').value.trim(),
+    mac_address: document.getElementById('enroll-mac').value.trim().toUpperCase(),
+    device_name: document.getElementById('enroll-device-name').value.trim()
+  };
+
+  const btn = document.getElementById('btn-enroll-submit');
+  btn.textContent = 'Enrolling...';
+  btn.disabled = true;
+
+  try {
+    const res  = await fetch(`${API}/enroll/save`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      showEnrollMessage('success', `${payload.name} enrolled successfully! Face + BLE saved.`);
+      document.getElementById('echeck3').textContent = '✓';
+      // Reset form after 2 seconds
+      setTimeout(() => {
+        document.getElementById('enroll-form').reset();
+        enrolledFaceCaptured = false;
+        document.getElementById('enroll-face-preview').style.display = 'none';
+        document.getElementById('echeck2').textContent = '';
+        document.getElementById('echeck3').textContent = '';
+        document.getElementById('btn-capture-face').textContent = 'Capture Face Photo';
+        document.getElementById('btn-capture-face').style.border = '';
+      }, 2000);
+    } else {
+      showEnrollMessage('error', data.message || 'Enrollment failed. Check backend console.');
+    }
+  } catch {
+    showEnrollMessage('error', 'Backend not reachable. Make sure backend.py is running.');
+  }
+
+  btn.textContent = 'Enroll Student';
+  btn.disabled = false;
+}
+
+function showEnrollMessage(type, msg) {
+  const box = document.getElementById('enroll-message');
+  box.style.display = 'block';
+  box.className = 'message-box ' + type;
+  box.textContent = msg;
+  setTimeout(() => { box.style.display = 'none'; }, 5000);
+}
+
+// ─── ATTENDANCE RECORDS ─────────────────────────
+
+async function loadAttendance() {
+  const dateF   = document.getElementById('filter-date').value;
+  const cls     = document.getElementById('filter-class').value.trim();
+  const status  = document.getElementById('filter-status').value;
+
+  const params = new URLSearchParams();
+  if (dateF)  params.append('date',   dateF);
+  if (cls)    params.append('class_name', cls);
+  if (status) params.append('status', status);
+
+  const tbody = document.getElementById('attendance-tbody');
+  tbody.innerHTML = '<tr><td colspan="10" class="no-data">Loading...</td></tr>';
+
+  try {
+    const res  = await fetch(`${API}/attendance/list?${params}`);
+    const data = await res.json();
+
+    if (!data.records || data.records.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="10" class="no-data">No records found</td></tr>';
+      updateRecordsSummary(0, 0, 0, 0);
+      return;
+    }
+
+    // Group records by date (already sorted date DESC from backend)
+    const grouped = {};
+    data.records.forEach(r => {
+      if (!grouped[r.date]) grouped[r.date] = [];
+      grouped[r.date].push(r);
+    });
+
+    // Sort dates DESC
+    const sortedDates = Object.keys(grouped).sort((a,b) => b.localeCompare(a));
+
+    let present = 0, absent = 0, suspicious = 0, rowIdx = 0;
+    let html = '';
+
+    sortedDates.forEach(d => {
+      // Format date header nicely
+      const dt = new Date(d + 'T00:00:00');
+      const dayLabel = dt.toLocaleDateString('en-IN', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+      html += `<tr class="day-group-row"><td colspan="10">📅 ${dayLabel}</td></tr>`;
+
+      // Sort students within the day by name
+      grouped[d].sort((a,b) => a.name.localeCompare(b.name));
+
+      grouped[d].forEach(r => {
+        rowIdx++;
+        if (r.status === 'present')         present++;
+        else if (r.status === 'suspicious') suspicious++;
+        else                                absent++;
+
+        const mins  = r.total_present_minutes || 0;
+        const pct   = Math.min(100, Math.round((mins / 400) * 100));
+        const pCol  = pct >= 75 ? 'var(--accent-green)' : pct >= 40 ? '#f59e0b' : 'var(--accent-red)';
+        const minBadge = `<span class="mins-badge${mins===0?' zero':''}">
+           ${mins}m / 400m &nbsp;|&nbsp; <span style="color:${pCol};font-weight:700">${pct}%</span>
+        </span>`;
+        const lastSeen = r.last_seen
+          ? new Date(r.last_seen).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})
+          : '—';
+
+        html += `<tr>
+          <td>${rowIdx}</td>
+          <td><strong>${r.name}</strong></td>
+          <td><code>${r.roll_no}</code></td>
+          <td>${r.class_name}</td>
+          <td>${r.time_in || '—'}</td>
+          <td>${lastSeen}</td>
+          <td style="text-align:center">${minBadge}</td>
+          <td style="text-align:center">${r.face_verified ? '✅' : '❌'}</td>
+          <td style="text-align:center">${r.ble_verified  ? '✅' : '❌'}</td>
+          <td><span class="badge badge-${r.status}">${r.status}</span></td>
+        </tr>`;
+      });
+    });
+
+    tbody.innerHTML = html;
+    updateRecordsSummary(data.records.length, present, absent, suspicious);
+  } catch(e) {
+    tbody.innerHTML = '<tr><td colspan="10" class="no-data">⚠️ Backend not reachable</td></tr>';
+  }
+}
+
+async function triggerEOD() {
+  const btn = document.getElementById('btn-eod');
+  btn.disabled = true; btn.textContent = '⏳ Syncing...';
+  try {
+    await fetch(`${API}/attendance/eod`, { method: 'POST' });
+    showToast('✅ End-of-day consolidation complete');
+    await loadAttendance();
+  } catch { showToast('⚠️ EOD sync failed', true); }
+  btn.disabled = false; btn.textContent = '🔚 EOD Sync';
+}
+
+function updateRecordsSummary(total, present, absent, suspicious = 0) {
+  document.getElementById('rec-total').textContent   = total;
+  document.getElementById('rec-present').textContent = present;
+  document.getElementById('rec-absent').textContent  = absent;
+  const suspEl = document.getElementById('rec-suspicious');
+  if (suspEl) suspEl.textContent = suspicious;
+}
+
+function exportCSV() {
+  const rows = [['#','Name','Roll No','Class','Time In','Last Seen','Mins Present','Face','BLE','Status']];
+  document.querySelectorAll('#attendance-tbody tr:not(.day-group-row)').forEach((tr, i) => {
+    const cells = [...tr.querySelectorAll('td')].map(td => td.innerText);
+    if (cells.length > 1) rows.push(cells);
+  });
+  const csv  = rows.map(r => r.join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = `attendance_${new Date().toISOString().split('T')[0]}.csv`;
+  a.click(); URL.revokeObjectURL(url);
+}
+
+// ─── BLE MONITOR ────────────────────────────────
+
+function startBLEScan() {
+  if (bleScanActive) return;
+  bleScanActive = true;
+  document.getElementById('btn-ble-scan').disabled = true;
+  document.getElementById('btn-ble-stop').disabled = false;
+  document.getElementById('ble-scan-status').textContent = '🔄 Scanning...';
+
+  fetch(`${API}/ble/scan/start`, { method: 'POST' }).catch(() => {});
+  bleInterval = setInterval(pollBLEDevices, 2000);
+  pollBLEDevices();
+}
+
+function stopBLEScan() {
+  bleScanActive = false;
+  clearInterval(bleInterval);
+  document.getElementById('btn-ble-scan').disabled = false;
+  document.getElementById('btn-ble-stop').disabled = true;
+  document.getElementById('ble-scan-status').textContent = 'Scan stopped';
+  fetch(`${API}/ble/scan/stop`, { method: 'POST' }).catch(() => {});
+}
+
+async function pollBLEDevices() {
+  if (!bleScanActive) return;
+  try {
+    const res  = await fetch(`${API}/ble/devices`);
+    const data = await res.json();
+    bleDevices = data.devices || [];
+    renderBLEDevices(bleDevices);
+    drawRadar(bleDevices);
+    document.getElementById('ble-scan-status').textContent =
+      `🔄 Scanning... ${bleDevices.length} device(s) found`;
+  } catch {
+    document.getElementById('ble-scan-status').textContent = '⚠️ Backend offline';
+  }
+}
+
+function renderBLEDevices(devices) {
+  const list = document.getElementById('ble-devices-list');
+
+  if (devices.length === 0) {
+    list.innerHTML = `
+      <div class="no-devices">
+        <div style="font-size:3rem;">📡</div>
+        <p>No BLE devices detected</p>
+        <small>Make sure ESP32 is powered on</small>
+      </div>`;
+    return;
+  }
+
+  list.innerHTML = devices.map(d => {
+    const bars   = rssiToBars(d.rssi);
+    const cls    = d.registered ? 'registered' : 'unknown';
+    const rssiCl = d.rssi > -60 ? 'strong' : d.rssi > -80 ? 'medium' : 'weak';
+    return `
+    <div class="ble-device-item ${cls}">
+      <div class="ble-signal-bar">
+        ${[1,2,3,4].map(i => `<div class="bar ${i <= bars ? 'lit' : ''}"></div>`).join('')}
+      </div>
+      <div class="ble-device-info">
+        <div class="dev-name">${d.name || 'Unknown Device'} ${d.registered ? '✅' : '⚠️'}</div>
+        <div class="dev-mac">${d.mac} ${d.student_name ? '— ' + d.student_name : ''}</div>
+      </div>
+      <div class="ble-rssi ${rssiCl}">${d.rssi} dBm</div>
+    </div>`;
+  }).join('');
+}
+
+function rssiToBars(rssi) {
+  if (rssi > -60) return 4;
+  if (rssi > -70) return 3;
+  if (rssi > -80) return 2;
+  return 1;
+}
+
+// ─── RADAR CANVAS ────────────────────────────────
+
+function drawRadar(devices) {
+  const canvas = document.getElementById('radar-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const cx  = canvas.width  / 2;
+  const cy  = canvas.height / 2;
+  const maxR = cx - 20;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Background circles
+  [1, 0.66, 0.33].forEach(factor => {
+    ctx.beginPath();
+    ctx.arc(cx, cy, maxR * factor, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(59,130,246,0.15)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  });
+
+  // Cross lines
+  ctx.strokeStyle = 'rgba(59,130,246,0.1)';
+  ctx.beginPath(); ctx.moveTo(cx, cy - maxR); ctx.lineTo(cx, cy + maxR); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx - maxR, cy); ctx.lineTo(cx + maxR, cy); ctx.stroke();
+
+  // Center dot (laptop)
+  ctx.beginPath();
+  ctx.arc(cx, cy, 8, 0, Math.PI * 2);
+  ctx.fillStyle = '#3b82f6';
+  ctx.fill();
+  ctx.fillStyle = '#fff';
+  ctx.font = '9px Inter';
+  ctx.textAlign = 'center';
+  ctx.fillText('PC', cx, cy + 3);
+
+  // Draw each device
+  devices.forEach((d, i) => {
+    const angle = (i / Math.max(devices.length, 1)) * Math.PI * 2;
+    const dist  = rssiToDistance(d.rssi);
+    const r     = Math.min(dist / 10 * maxR, maxR - 15);
+    const x     = cx + Math.cos(angle) * r;
+    const y     = cy + Math.sin(angle) * r;
+    const color = d.rssi > -60 ? '#10b981' : d.rssi > -80 ? '#f59e0b' : '#ef4444';
+
+    ctx.beginPath();
+    ctx.arc(x, y, 10, 0, Math.PI * 2);
+    ctx.fillStyle = color + '33';
+    ctx.fill();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 8px Inter';
+    ctx.textAlign = 'center';
+    ctx.fillText(d.name ? d.name.slice(0, 4) : 'BLE', x, y + 3);
+  });
+
+  // Animated sweep line
+  const sweep = (Date.now() / 1500) % (Math.PI * 2);
+  const grad  = ctx.createLinearGradient(cx, cy, cx + Math.cos(sweep)*maxR, cy + Math.sin(sweep)*maxR);
+  grad.addColorStop(0, 'rgba(59,130,246,0.4)');
+  grad.addColorStop(1, 'rgba(59,130,246,0)');
+  ctx.beginPath();
+  ctx.moveTo(cx, cy);
+  ctx.arc(cx, cy, maxR, sweep, sweep + 0.3);
+  ctx.closePath();
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  if (bleScanActive) requestAnimationFrame(() => drawRadar(bleDevices));
+}
+
+function rssiToDistance(rssi) {
+  // Approx: RSSI = -59 at 1m; path loss n=2
+  const txPower = -59;
+  return Math.pow(10, (txPower - rssi) / (10 * 2));
+}
+
+// ─── STUDENTS LIST ───────────────────────────────
+
+async function loadStudents() {
+  const grid = document.getElementById('students-grid');
+  grid.innerHTML = '<div class="no-data-card"><p>Loading...</p></div>';
+
+  try {
+    const res  = await fetch(`${API}/students/list`);
+    const data = await res.json();
+    allStudents = data.students || [];
+    renderStudents(allStudents);
+  } catch {
+    grid.innerHTML = '<div class="no-data-card"><p>⚠️ Backend not reachable</p></div>';
+  }
+}
+
+async function reloadBackendDB(event) {
+  const btn = event.target;
+  const originalText = btn.textContent;
+  btn.textContent = '🔄 Syncing...';
+  btn.disabled = true;
+
+  try {
+    // Reload face encodings in backend memory
+    await fetch(`${API}/db/reload`, { method: 'POST' });
+    // Reload BLE registered devices in backend memory
+    await fetch(`${API}/ble/reload`, { method: 'POST' });
+    // Refresh students grid
+    await loadStudents();
+    showToast('✅ Database synced — face & BLE memory refreshed.');
+  } catch (e) {
+    showToast('⚠️ Sync failed: ' + e.message, true);
+  } finally {
+    btn.textContent = originalText;
+    btn.disabled = false;
+  }
+}
+
+function filterStudents() {
+  const q = document.getElementById('student-search').value.toLowerCase();
+  const filtered = allStudents.filter(s =>
+    s.name.toLowerCase().includes(q) || s.roll_no.toLowerCase().includes(q)
+  );
+  renderStudents(filtered);
+}
+
+function renderStudents(students) {
+  const grid = document.getElementById('students-grid');
+  if (students.length === 0) {
+    grid.innerHTML = '<div class="no-data-card"><div style="font-size:3rem;">👥</div><p>No students found</p></div>';
+    return;
+  }
+  grid.innerHTML = students.map(s => `
+    <div class="student-card">
+      <div class="s-avatar">👤</div>
+      <div class="s-name">${s.name}</div>
+      <div class="s-roll">${s.roll_no}</div>
+      <div class="s-class">${s.class_name}</div>
+      <div class="s-ble">📡 ${s.device_name || s.mac_address || 'No BLE'}</div>
+    </div>
+  `).join('');
+}
+
+
+// ─── TOAST NOTIFICATION ──────────────────────────
+function showToast(msg, isError = false) {
+  let toast = document.getElementById('_toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = '_toast';
+    toast.style.cssText = [
+      'position:fixed', 'bottom:24px', 'right:24px', 'z-index:9999',
+      'padding:12px 20px', 'border-radius:10px', 'font-size:0.875rem',
+      'font-weight:600', 'max-width:360px', 'box-shadow:0 8px 24px rgba(0,0,0,0.4)',
+      'transition:opacity 0.4s ease', 'opacity:0', 'pointer-events:none',
+      'font-family:Inter,sans-serif'
+    ].join(';');
+    document.body.appendChild(toast);
+  }
+  toast.textContent  = msg;
+  toast.style.background = isError ? 'rgba(239,68,68,0.95)' : 'rgba(16,185,129,0.95)';
+  toast.style.color      = '#fff';
+  toast.style.border     = isError ? '1px solid #ef4444' : '1px solid #10b981';
+  toast.style.opacity    = '1';
+  clearTimeout(toast._timer);
+  toast._timer = setTimeout(() => { toast.style.opacity = '0'; }, 3500);
+}
+
+  </script>
+</body>
+</html>

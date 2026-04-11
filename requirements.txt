@@ -1,0 +1,13 @@
+# Smart Attendance System - Required Python Packages
+# Install all with one command:
+#   pip install -r requirements.txt
+
+flask
+flask-cors
+mediapipe
+face-recognition
+opencv-python
+supabase
+bleak
+numpy
+pycryptodome
