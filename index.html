@@ -693,6 +693,7 @@ tr:hover td { background: rgba(255,255,255,0.02); }
     <button class="nav-btn" onclick="showTab('enroll')" id="tab-enroll">➕ Enroll Student</button>
     <button class="nav-btn" onclick="showTab('records')" id="tab-records">📋 Attendance Records</button>
     <button class="nav-btn" onclick="showTab('ble-monitor')" id="tab-blemonitor">📡 BLE Monitor</button>
+    <button class="nav-btn" onclick="showTab('live-map')" id="tab-livemap">🗺️ 2D Map Monitoring</button>
     <button class="nav-btn" onclick="showTab('students')" id="tab-students">👥 Students</button>
     <button class="nav-btn" onclick="showTab('quantum')" id="tab-quantum" style="color:#a78bfa;">⚛️ Quantum Security</button>
   </nav>
@@ -987,7 +988,32 @@ tr:hover td { background: rgba(255,255,255,0.02); }
       </div>
     </section>
 
-    <!-- ========== TAB 5: STUDENTS LIST ========== -->
+    <!-- ========== TAB 5: 2D MAP MONITORING ========== -->
+    <section id="live-map" class="tab-section">
+      <div class="section-header">
+        <h2>🗺️ Live 2D Map Monitoring</h2>
+        <p>Real-time spatial visualization of student locations based on BLE proximity</p>
+      </div>
+
+      <div class="card" style="position:relative; overflow:hidden;">
+        <h3>📍 Campus / Classroom Floor Plan</h3>
+        <div id="map-container" style="position:relative; width:100%; max-width:1000px; margin:0 auto; background:#0f172a; border-radius:12px; border:2px solid var(--border); aspect-ratio:16/9; background-image:radial-gradient(circle, rgba(59,130,246,0.05) 1px, transparent 1px); background-size:30px 30px;">
+            <!-- Scanner (PC) -->
+            <div id="map-scanner" style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); width:20px; height:20px; background:var(--accent-blue); border-radius:50%; box-shadow:0 0 20px var(--accent-blue); z-index:10;">
+                <div style="position:absolute; top:-25px; left:50%; transform:translateX(-50%); font-size:0.7rem; color:var(--accent-blue); font-weight:700; white-space:nowrap;">🖥️ MAIN SCANNER</div>
+            </div>
+            <!-- Student Markers will be injected here -->
+            <div id="map-markers"></div>
+        </div>
+        <div class="radar-legend" style="margin-top:16px; justify-content:center;">
+          <span><span class="legend-dot green"></span> Close (&lt; 3m)</span>
+          <span><span class="legend-dot yellow"></span> Mid-Range (3-7m)</span>
+          <span><span class="legend-dot red"></span> Far (&gt; 7m)</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== TAB 6: STUDENTS LIST ========== -->
     <section id="students" class="tab-section">
       <div class="section-header">
         <h2>👥 Enrolled Students</h2>
@@ -1261,6 +1287,7 @@ const TAB_IDS = {
   'enroll':          'tab-enroll',
   'records':         'tab-records',
   'ble-monitor':     'tab-blemonitor',
+  'live-map':        'tab-livemap',
   'students':        'tab-students',
   'quantum':         'tab-quantum'
 };
@@ -1281,6 +1308,7 @@ function showTab(tabId) {
   if (tabId === 'records')  loadAttendance();
   if (tabId === 'students') loadStudents();
   if (tabId === 'quantum')  loadQuantumStatus();
+  if (tabId === 'live-map') startMapTracking();
 
   // Smartly route camera to the active tab
   if (typeof switchCameraFeeds === 'function') switchCameraFeeds();
@@ -2137,6 +2165,86 @@ function showToast(msg, isError = false) {
   toast._timer = setTimeout(() => { toast.style.opacity = '0'; }, 3500);
 }
 
-  </script>
+// ─── 2D MAP MONITORING ──────────────────────────
+let _mapInterval = null;
+
+function startMapTracking() {
+    if (_mapInterval) clearInterval(_mapInterval);
+    updateMapMarkers();
+    _mapInterval = setInterval(updateMapMarkers, 3000);
+}
+
+async function updateMapMarkers() {
+    if (activeTab !== 'live-map') {
+        clearInterval(_mapInterval);
+        _mapInterval = null;
+        return;
+    }
+    
+    try {
+        const res  = await fetch(`${API}/ble/devices`);
+        const data = await res.json();
+        const devices = data.devices || [];
+        
+        const container = document.getElementById('map-markers');
+        if (!container) return;
+        
+        container.innerHTML = ''; // Clear old markers
+        
+        devices.forEach((d, i) => {
+            if (!d.registered) return; // Only show registered students
+            
+            const dist  = rssiToDistance(d.rssi);
+            const maxDist = 15; // assumption for scaling
+            const radius = Math.min((dist / maxDist) * 45, 45); // percentage
+            
+            // Randomly scatter them in a circle around the center based on distance
+            // In a real system with multiple base stations, we'd use trilateration
+            const seed = d.mac.split(':').reduce((a, b) => a + parseInt(b, 16), 0);
+            const angle = (seed % 360) * (Math.PI / 180);
+            
+            const left = 50 + Math.cos(angle) * radius;
+            const top  = 50 + Math.sin(angle) * radius;
+            
+            const color = d.rssi > -60 ? 'var(--accent-green)' : d.rssi > -80 ? 'var(--accent-yellow)' : 'var(--accent-red)';
+            
+            const marker = document.createElement('div');
+            marker.className = 'student-marker';
+            marker.style.cssText = `
+                position: absolute;
+                left: ${left}%;
+                top: ${top}%;
+                transform: translate(-50%, -50%);
+                width: 14px;
+                height: 14px;
+                background: ${color};
+                border: 2px solid #fff;
+                border-radius: 50%;
+                box-shadow: 0 0 10px ${color};
+                z-index: 20;
+                transition: all 2s ease-in-out;
+            `;
+            
+            const label = document.createElement('div');
+            label.style.cssText = `
+                position: absolute;
+                top: 18px;
+                left: 50%;
+                transform: translateX(-50%);
+                font-size: 0.65rem;
+                font-weight: 700;
+                color: #fff;
+                background: rgba(0,0,0,0.6);
+                padding: 2px 6px;
+                border-radius: 4px;
+                white-space: nowrap;
+            `;
+            label.textContent = d.student_name || d.name || 'Student';
+            
+            marker.appendChild(label);
+            container.appendChild(marker);
+        });
+    } catch {}
+}
 </body>
 </html>

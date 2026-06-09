@@ -10,5 +10,4 @@ opencv-python
 supabase
 bleak
 numpy
-pycryptodome
 python-dotenv

@@ -1,8 +1,7 @@
 """
-Smart Attendance System - Complete Backend v3 (Quantum Edition)
-===============================================================
+Smart Attendance System - Complete Backend
+==========================================
 All-in-one: Flask API + MediaPipe FRS + BLE Scanner + Supabase DB
-            + Post-Quantum Cryptography (PQC) Layer
 Run: python backend.py
 Dashboard opens at: http://127.0.0.1:5000
 
@@ -14,12 +13,6 @@ Attendance Logic:
   - total_present_minutes in attendance is updated incrementally
   - last_seen timestamp updated on every confirmed ESP signal
   - At 16:50 a day-end snapshot consolidates the final status
-
-Quantum Security Layer (CRYSTALS-Kyber-1024 + Dilithium):
-  - Face encodings encrypted with AES-256-GCM before cloud storage
-  - BLE tokens signed with HMAC-SHA3-256 (Dilithium-style)
-  - Session keys generated via LWE-based Kyber KEM simulation
-  - Quantum audit log tracks all security events
 """
 
 import cv2, json, time, threading, asyncio, os
@@ -35,14 +28,7 @@ from supabase import create_client, Client
 from datetime import date, datetime, timedelta
 import bleak
 
-# ── Quantum Crypto Layer ──────────────────────────────────────
-from quantum_crypto import (
-    quantum_status_report, get_session_keypair, generate_ble_token,
-    verify_ble_token, encrypt_face_encoding, decrypt_face_encoding,
-    DilithiumSigner, quantum_entropy
-)
-_q_signer = DilithiumSigner()
-print("[QUANTUM] PQC layer loaded — Kyber-1024 + Dilithium active")
+
 
 # Faces saved locally in project/faces/ folder
 FACES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'faces')
@@ -51,8 +37,8 @@ os.makedirs(FACES_DIR, exist_ok=True)
 # ─────────────────────────────────────────────
 #  CONFIG  (edit if needed)
 # ─────────────────────────────────────────────
-SUPABASE_URL       = os.getenv("SUPABASE_URL")
-SUPABASE_KEY       = os.getenv("SUPABASE_KEY")
+SUPABASE_URL       = os.getenv("SUPABASE_URL", "https://giuwlorzwpbfrfablcva.supabase.co")
+SUPABASE_KEY       = os.getenv("SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdpdXdsb3J6d3BiZnJmYWJsY3ZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgxMjc2MTEsImV4cCI6MjA4MzcwMzYxMX0.PnNwRmpeSmUhO0gfcPYYh6oMje2h9uCa3k8lpGLfV00")
 CAMERA_INDEX       = 0        # 0 = built-in webcam
 FACE_THRESHOLD     = 0.50     # Strictness: lower = stricter match
 BLE_SCAN_TIMEOUT   = 5.0      # seconds per BLE scan cycle
@@ -230,12 +216,11 @@ def _load_faces():
             '*, students(id, name, roll_no, class_name)'
         ).execute().data
         if rows:
-            # ── PQC: Decrypt face encodings (supports both legacy and PQC-encrypted) ──
             for r in rows:
-                enc_data = decrypt_face_encoding(r['encoding'])
+                enc_data = json.loads(r['encoding'])
                 _known_encodings.append(np.array(enc_data))
                 _known_students.append(r['students'])
-        print(f"[FRS] {len(_known_encodings)} face(s) loaded from DB (PQC-decrypted)")
+        print(f"[FRS] {len(_known_encodings)} face(s) loaded from DB")
     except Exception as e:
         print(f"[FRS] Load error: {e}")
 
@@ -499,25 +484,13 @@ async def _ble_loop():
                 }
 
                 if reg:
-                    # ── QUANTUM PQC VERIFICATION LAYER ──
-                    token_verified = False
-                    if hasattr(adv, 'manufacturer_data') and adv.manufacturer_data:
-                        mfg = adv.manufacturer_data.get(0xFFFF, b'')
-                        token_str = mfg.decode('utf-8', errors='ignore').strip()
-                        
-                        if verify_ble_token(mac, token_str):
-                            token_verified = True
-                    
-                    if token_verified:
-                        entry.update({
-                            'registered':   True,
-                            'device_name':  reg['device_name'],
-                            'student_id':   reg['student_id'],
-                            'student_name': reg['students']['name'] if reg.get('students') else None
-                        })
-                        matched.append(mac)
-                    else:
-                        print(f"[QUANTUM SECURITY] REJECTED {mac}: Post-Quantum token invalid or missing!")
+                    entry.update({
+                        'registered':   True,
+                        'device_name':  reg['device_name'],
+                        'student_id':   reg['student_id'],
+                        'student_name': reg['students']['name'] if reg.get('students') else None
+                    })
+                    matched.append(mac)
 
                 new_map[mac] = entry
 
@@ -525,7 +498,7 @@ async def _ble_loop():
                 _ble_map.clear()
                 _ble_map.update(new_map)
 
-            print(f"[BLE] Scan: {len(new_map)} found, {len(matched)} secure match(es): {matched}")
+            print(f"[BLE] Scan: {len(new_map)} found, {len(matched)} registered match(es): {matched}")
 
             # ── ESP Signal Recording (TimeLapse) ──────────────────
             # For every registered device found → record an ESP signal
@@ -543,29 +516,7 @@ async def _ble_loop():
 def _ble_thread_fn():
     asyncio.run(_ble_loop())
 
-# ─────────────────────────────────────────────
-#  QUANTUM AUDIT LOGGER
-# ─────────────────────────────────────────────
-_quantum_audit_log = []   # In-memory ring buffer (last 100 events)
-_audit_lock = threading.Lock()
 
-def _quantum_audit(event_type: str, entity_id: str, detail: str):
-    """
-    Log a quantum security event to the in-memory audit ring buffer.
-    Events: FACE_ENROLLED, ATTENDANCE_MARKED, BLE_TOKEN_GEN, KEY_EXCHANGE, etc.
-    """
-    entry = {
-        'ts':         datetime.now().isoformat(),
-        'event':      event_type,
-        'entity_id':  entity_id,
-        'detail':     detail,
-        'signature':  _q_signer.sign(f"{event_type}:{entity_id}:{detail}")[:16]
-    }
-    with _audit_lock:
-        _quantum_audit_log.append(entry)
-        if len(_quantum_audit_log) > 100:
-            _quantum_audit_log.pop(0)
-    print(f"[QUANTUM AUDIT] {event_type} | {entity_id[:8]}... | {detail[:60]}")
 
 
 # ─────────────────────────────────────────────
@@ -689,15 +640,11 @@ def api_enroll_save():
         else:
             image_url = None
 
-        # ── PQC: Encrypt face encoding before storing to cloud ──
-        pqc_encoding = encrypt_face_encoding(_temp_face_enc.tolist())
         supabase.table('face_encodings').insert({
             'student_id': sid,
-            'encoding':   pqc_encoding,
+            'encoding':   json.dumps(_temp_face_enc.tolist()),
             'image_url':  image_url
         }).execute()
-        # ── Quantum Audit Log ──
-        _quantum_audit('FACE_ENROLLED', sid, f'Face encoding PQC-encrypted for {d["name"]}')
 
         if d.get('mac_address'):
             supabase.table('ble_devices').insert({
@@ -746,8 +693,6 @@ def api_att_mark():
                 'total_present_minutes': 0,
                 **payload
             }).execute()
-        _quantum_audit('ATTENDANCE_MARKED', d['student_id'],
-                       f'Status={d["status"]} face={d["face_verified"]} ble={d["ble_verified"]}')
         return jsonify({'success': True})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
@@ -898,58 +843,7 @@ def api_students():
     except Exception as e:
         return jsonify({'students': [], 'error': str(e)})
 
-# ─────────────────────────────────────────────
-#  QUANTUM API ROUTES
-# ─────────────────────────────────────────────
 
-@app.route('/quantum/status')
-def api_quantum_status():
-    """Returns the full PQC security status for the dashboard."""
-    report = quantum_status_report()
-    # Sign the response with Dilithium signer
-    sig = _q_signer.sign(json.dumps(report, sort_keys=True))
-    report['response_signature'] = sig[:32]
-    return jsonify(report)
-
-@app.route('/quantum/audit')
-def api_quantum_audit():
-    """Returns the last N quantum security audit events."""
-    limit = int(request.args.get('limit', 20))
-    with _audit_lock:
-        logs = list(reversed(_quantum_audit_log))[:limit]
-    return jsonify({'audit_log': logs, 'total': len(_quantum_audit_log)})
-
-@app.route('/quantum/ble_token/<mac>')
-def api_ble_token(mac):
-    """
-    Generate a quantum-safe BLE authentication token for a given MAC address.
-    Token rotates every 60 seconds — prevents replay attacks.
-    """
-    token = generate_ble_token(mac)
-    _quantum_audit('BLE_TOKEN_GEN', mac, f'Token generated for {mac}')
-    return jsonify({
-        'mac':       mac.upper(),
-        'token':     token,
-        'valid_sec': 60,
-        'algorithm': 'HMAC-SHA3-256 (Dilithium-sim)',
-        'quantum_safe': True
-    })
-
-@app.route('/quantum/keygen', methods=['POST'])
-def api_quantum_keygen():
-    """
-    Trigger a new Kyber-1024 key pair generation.
-    Returns public key preview (secret key never exposed via API).
-    """
-    kp = get_session_keypair()
-    _quantum_audit('KEY_EXCHANGE', 'session', 'Kyber-1024 KEM key pair accessed')
-    return jsonify({
-        'algorithm':      kp['security_level'],
-        'public_key':     kp['public_key'][:32] + '...',
-        'keygen_ms':      kp.get('keygen_ms', 0),
-        'nist_standard':  'FIPS 203 (ML-KEM)',
-        'quantum_safe':   True
-    })
 
 
 # ─────────────────────────────────────────────
