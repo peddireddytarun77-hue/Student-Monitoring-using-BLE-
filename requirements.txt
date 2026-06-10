@@ -11,3 +11,5 @@ supabase
 bleak
 numpy
 python-dotenv
+pycryptodome
+

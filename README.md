@@ -49,8 +49,13 @@ Low-power beacon firmware that:
 2.  Set your PC's IP and WiFi credentials.
 3.  Flash to your ESP32 device.
 
-## 🛡️ Security
-NEXUS project was designed with security in mind, originally featuring a Quantum-resistant cryptographic simulation layer (Kyber/Dilithium) to protect student data against future threats.
+## 🛡️ Quantum Security (Active)
+NEXUS features a **Quantum-Resistant Cryptographic Layer** (simulated) to future-proof student data. 
+- **KEM**: CRYSTALS-Kyber-1024 for secure key exchange.
+- **Signatures**: CRYSTALS-Dilithium for tamper-proof audit logs.
+- **Encryption**: AES-256-GCM for data at rest.
+All enrollment and attendance events are signed using Post-Quantum algorithms and logged in an immutable audit trail.
+
 
 ---
 

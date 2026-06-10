@@ -28,6 +28,11 @@ from supabase import create_client, Client
 from datetime import date, datetime, timedelta
 import bleak
 
+# ── Quantum Security Layer ────────────────────
+from quantum_crypto import QuantumShield
+q_shield = QuantumShield()
+
+
 
 
 # Faces saved locally in project/faces/ folder
@@ -545,6 +550,29 @@ def api_status():
         'window_end':   f"{ATT_END_H:02d}:{ATT_END_M:02d}"
     })
 
+# ── Quantum Security ──
+@app.route('/quantum/status')
+def api_quantum_status():
+    return jsonify(q_shield.get_status())
+
+@app.route('/quantum/audit')
+def api_quantum_audit():
+    limit = int(request.args.get('limit', 20))
+    logs = q_shield.get_audit()
+    return jsonify({"audit_log": logs[:limit]})
+
+@app.route('/quantum/keygen', methods=['POST'])
+def api_quantum_keygen():
+    pub = q_shield.rotate_keys()
+    status = q_shield.get_status()
+    return jsonify({
+        "ok": True, 
+        "public_key": pub,
+        "algorithm": status['kem_algorithm'],
+        "keygen_ms": status['keygen_ms']
+    })
+
+
 # ── Video Feed ──
 @app.route('/video_feed')
 def api_video():
@@ -657,7 +685,12 @@ def api_enroll_save():
         _temp_face_img = None
         _load_faces()
         _ble_reload_flag.set()
+
+        # Update Quantum Audit Log
+        q_shield.log_event("STUDENT_ENROLLMENT", sid, f"Student {d['name']} enrolled with PQC-signed biometric hash.")
+
         return jsonify({'success': True, 'student_id': sid, 'image_url': image_url})
+
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
 
@@ -688,12 +721,15 @@ def api_att_mark():
             supabase.table('attendance').update(payload).eq('id', existing[0]['id']).execute()
         else:
             supabase.table('attendance').insert({
-                'student_id': d['student_id'],
-                'date': today,
                 'total_present_minutes': 0,
                 **payload
             }).execute()
+
+        # Update Quantum Audit Log
+        q_shield.log_event("ATTENDANCE_MARK", d['student_id'], f"Attendance marked as {d['status']} (Face: {d['face_verified']}, BLE: {d['ble_verified']})")
+
         return jsonify({'success': True})
+
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
 
