@@ -12,4 +12,8 @@ bleak
 numpy
 python-dotenv
 pycryptodome
-
+pytest
+pytest-flask
+flasgger
+pyyaml
+jsonschema

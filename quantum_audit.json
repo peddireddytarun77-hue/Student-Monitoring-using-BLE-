@@ -1,0 +1,9 @@
+[
+  {
+    "ts": "2026-06-10T13:35:41.094802",
+    "event": "KEY_ROTATION",
+    "entity_id": "SYSTEM",
+    "detail": "New session keypair generated using CRYSTALS-Kyber-1024",
+    "signature": "W/EpXmPtKjSp7XADK0hhg9mLdseHtTyN88kWnAqdnE4cvBqi55wqSM1XO9WS75oj"
+  }
+]

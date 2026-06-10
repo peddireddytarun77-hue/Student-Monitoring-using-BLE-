@@ -15,7 +15,7 @@ Attendance Logic:
   - At 16:50 a day-end snapshot consolidates the final status
 """
 
-import cv2, json, time, threading, asyncio, os
+import cv2, json, time, threading, asyncio, os, logging
 from dotenv import load_dotenv
 load_dotenv()  # Load secrets from .env file
 import numpy as np
@@ -27,6 +27,22 @@ from flask_cors import CORS
 from supabase import create_client, Client
 from datetime import date, datetime, timedelta
 import bleak
+
+# ── LOGGING CONFIGURATION ─────────────────────
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
+    handlers=[
+        logging.FileHandler("backend.log"),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger("NEXUS-Backend")
+
+# ── Quantum Security Layer ────────────────────
+from quantum_crypto import QuantumShield
+q_shield = QuantumShield()
+
 
 # ── Quantum Security Layer ────────────────────
 from quantum_crypto import QuantumShield
@@ -40,13 +56,19 @@ FACES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'faces')
 os.makedirs(FACES_DIR, exist_ok=True)
 
 # ─────────────────────────────────────────────
-#  CONFIG  (edit if needed)
+#  CONFIG  (Load from .env via environment variables)
 # ─────────────────────────────────────────────
-SUPABASE_URL       = os.getenv("SUPABASE_URL", "https://giuwlorzwpbfrfablcva.supabase.co")
-SUPABASE_KEY       = os.getenv("SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdpdXdsb3J6d3BiZnJmYWJsY3ZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgxMjc2MTEsImV4cCI6MjA4MzcwMzYxMX0.PnNwRmpeSmUhO0gfcPYYh6oMje2h9uCa3k8lpGLfV00")
-CAMERA_INDEX       = 0        # 0 = built-in webcam
-FACE_THRESHOLD     = 0.50     # Strictness: lower = stricter match
-BLE_SCAN_TIMEOUT   = 5.0      # seconds per BLE scan cycle
+SUPABASE_URL = os.environ.get("SUPABASE_URL")
+SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
+
+if not SUPABASE_URL or not SUPABASE_KEY:
+    logger.critical("SUPABASE_URL or SUPABASE_KEY not found in environment variables!")
+    raise EnvironmentError("Missing Supabase configuration. Check your .env file.")
+
+CAMERA_INDEX     = 0        # 0 = built-in webcam
+FACE_THRESHOLD   = 0.50     # Strictness: lower = stricter match
+BLE_SCAN_TIMEOUT = 5.0      # seconds per BLE scan cycle
+
 
 # ── Attendance Window & Breaks ───────────────
 ATT_START_H, ATT_START_M = 9,  0     # 09:00
@@ -160,7 +182,7 @@ def _camera_cleanup_loop():
             if not _rec_active:
                 with _cam_lock:
                     if _camera is not None:
-                        print("[CAM] Idle timeout -> Releasing hardware (Battery Save)")
+                        logger.info("[CAM] Idle timeout -> Releasing hardware (Battery Save)")
                         _camera.release()
                         _camera = None
         time.sleep(2)
@@ -225,9 +247,9 @@ def _load_faces():
                 enc_data = json.loads(r['encoding'])
                 _known_encodings.append(np.array(enc_data))
                 _known_students.append(r['students'])
-        print(f"[FRS] {len(_known_encodings)} face(s) loaded from DB")
+        logger.info(f"[FRS] {len(_known_encodings)} face(s) loaded from DB")
     except Exception as e:
-        print(f"[FRS] Load error: {e}")
+        logger.error(f"[FRS] Load error: {e}")
 
 # ─────────────────────────────────────────────
 #  RECOGNITION BACKGROUND THREAD
@@ -350,9 +372,9 @@ def _flush_presence_window(student_id: str, window_start: datetime, signal_count
                 'total_present_minutes': new_mins,
                 'last_seen': datetime.now().isoformat()
             }).eq('id', att['id']).execute()
-            print(f"[ESP] Flushed window for {student_id}: +1 min → {new_mins} min total")
+            logger.info(f"[ESP] Flushed window for {student_id}: +1 min → {new_mins} min total")
     except Exception as e:
-        print(f"[ESP] Flush error for {student_id}: {e}")
+        logger.error(f"[ESP] Flush error for {student_id}: {e}")
 
 def _esp_timelapse_watchdog():
     """
@@ -382,14 +404,14 @@ def _esp_timelapse_watchdog():
             time_threshold = (now - timedelta(minutes=5)).isoformat()
             missing = supabase.table('attendance').select('*, students(name)').eq('date', today).eq('status', 'present').lt('last_seen', time_threshold).execute().data
             for m in missing:
-                print(f"[ALERT] Staff Notification: Student {m['students']['name']} missing for > 5 mins!")
+                logger.warning(f"[ALERT] Staff Notification: Student {m['students']['name']} missing for > 5 mins!")
                 supabase.table('attendance').update({'status': 'suspicious', 'ble_verified': False}).eq('id', m['id']).execute()
         except:
             pass
 
         # Reset Face Verification immediately after break times (Enforce FRS after break)
         if _recently_ended_break():
-            print("[BREAK OVER] Resetting face_verified for everyone to prevent proxies!")
+            logger.info("[BREAK OVER] Resetting face_verified for everyone to prevent proxies!")
             try:
                 present_students = supabase.table('attendance').select('id').eq('date', today).eq('face_verified', True).execute().data
                 for s in present_students:
@@ -402,7 +424,7 @@ def _esp_timelapse_watchdog():
             _eod_done['done'] = True
             _eod_done['last_date'] = today
             _run_eod_consolidation(today)
-            print(f"[EOD] End-of-day consolidation done for {today}")
+            logger.info(f"[EOD] End-of-day consolidation done for {today}")
 
         # Reset EOD flag on next day
         if _eod_done['last_date'] and _eod_done['last_date'] != today:
@@ -432,13 +454,13 @@ def _run_eod_consolidation(today: str):
                 supabase.table('attendance_history').upsert(r).execute()
                 supabase.table('attendance').delete().eq('id', r['id']).execute()
             if old_rows:
-                print(f"[EOD] Moved {len(old_rows)} old rows to attendance_history trash table.")
+                logger.info(f"[EOD] Moved {len(old_rows)} old rows to attendance_history trash table.")
         except Exception as hist_e:
-            print(f"[EOD] Warning: Could not dump history (Create tables if needed) - {hist_e}")
+            logger.warning(f"[EOD] Warning: Could not dump history (Create tables if needed) - {hist_e}")
 
-        print(f"[EOD] Consolidated {len(rows)} attendance records for {today}")
+        logger.info(f"[EOD] Consolidated {len(rows)} attendance records for {today}")
     except Exception as e:
-        print(f"[EOD] Consolidation error: {e}")
+        logger.error(f"[EOD] Consolidation error: {e}")
 
 # ─────────────────────────────────────────────
 #  BLE SCANNER (async, in background thread)
@@ -456,9 +478,9 @@ async def _ble_loop():
             ).eq('is_active', True).execute().data
             registered = {r['mac_address'].upper(): r for r in rows}
             _last_reg_reload = time.time()
-            print(f"[BLE] {len(registered)} registered device(s) loaded.")
+            logger.info(f"[BLE] {len(registered)} registered device(s) loaded.")
         except Exception as e:
-            print(f"[BLE] Could not load devices: {e}")
+            logger.error(f"[BLE] Could not load devices: {e}")
 
     _reload_registered()
 
@@ -503,7 +525,7 @@ async def _ble_loop():
                 _ble_map.clear()
                 _ble_map.update(new_map)
 
-            print(f"[BLE] Scan: {len(new_map)} found, {len(matched)} registered match(es): {matched}")
+            logger.info(f"[BLE] Scan: {len(new_map)} found, {len(matched)} registered match(es): {matched}")
 
             # ── ESP Signal Recording (TimeLapse) ──────────────────
             # For every registered device found → record an ESP signal

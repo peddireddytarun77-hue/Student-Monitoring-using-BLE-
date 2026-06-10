@@ -1,0 +1,11 @@
+services:
+  nexus-backend:
+    build: .
+    ports:
+      - "5000:5000"
+    env_file:
+      - .env
+    volumes:
+      - ./faces:/app/faces
+      - ./backend.log:/app/backend.log
+    restart: unless-stopped
