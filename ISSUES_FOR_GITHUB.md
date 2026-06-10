@@ -24,4 +24,18 @@ The current 2D Map uses a single scanner (the PC) to estimate student proximity.
 
 ---
 
+---
+
+## Issue 3: Network Traffic & Load Management
+**Title**: [Stability] Implement Congestion Control for High Network Traffic
+**Description**:
+The system occasionally experiences heavy load due to high network traffic from frequent BLE scanning and face data synchronization. To optimize performance:
+- Implement a debouncing mechanism for BLE signal updates (TimeLapse logic optimization).
+- Optimize API polling frequencies when the dashboard is in the background.
+- Ensure efficient data serialization for Supabase queries to reduce bandwidth usage.
+- Add exponential backoff for ESP32 WiFi reconnection attempts.
+
+---
+
 **Note to Developer**: To create these issues, go to the **Issues** tab on GitHub, click **New Issue**, and paste the content above.
+
