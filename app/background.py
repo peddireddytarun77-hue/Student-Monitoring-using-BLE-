@@ -5,6 +5,10 @@ from .config import logger, TIMELAPSE_SECONDS, BLE_SCAN_TIMEOUT
 from .shared import state
 from .database import supabase
 from .logic import detect_face, encode_face, match_face, load_faces, in_attendance_window, recently_ended_break
+# Circular import prevention
+def get_socketio():
+    from . import socketio
+    return socketio
 
 def get_camera():
     if state.camera is None or not state.camera.isOpened():
@@ -77,6 +81,7 @@ def flush_presence_window(student_id, window_start, signal_count):
             new_mins = (att.get('total_present_minutes') or 0) + 1
             supabase.table('attendance').update({'total_present_minutes': new_mins, 'last_seen': datetime.now().isoformat()}).eq('id', att['id']).execute()
             logger.info(f"[ESP] Flushed window for {student_id}: +1 min")
+            get_socketio().emit('attendance_update', {'student_id': student_id, 'date': today, 'minutes': new_mins}, namespace='/')
     except Exception as e:
         logger.error(f"[ESP] Flush error for {student_id}: {e}")
 
@@ -133,6 +138,7 @@ async def ble_loop():
                     if in_attendance_window(): record_esp_signal(reg['student_id'])
                 new_map[mac] = entry
             with state.ble_lock: state.ble_map.clear(); state.ble_map.update(new_map)
+            get_socketio().emit('ble_update', list(new_map.values()), namespace='/')
         except Exception as e: logger.error(f"[BLE] Scan error: {e}")
         await asyncio.sleep(2)
 
